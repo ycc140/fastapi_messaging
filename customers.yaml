@@ -1,0 +1,302 @@
+openapi: 3.0.3
+
+info:
+  title: CustomerService API
+  description: API to process Customer data requests.
+  version: 1.0.0
+
+servers:
+  - url: http://127.0.0.1:8002
+    description: URL for local development and testing
+  - url: https://fictitious.com
+    description: main production server
+  - url: https://fictitious-staging.com
+    description: staging server for testing purposes only
+
+paths:
+  /v1/customers/{customer_id}/billing:
+    post:
+      description: '***Request Credit Card details and amount to pay for specified Customer.***'
+      summary: Get Customer Billing Info
+      tags:
+      - Customers
+      parameters:
+      - description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+          A unique identifier for an existing Order.'
+        in: path
+        name: customer_id
+        required: true
+        schema:
+          description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+            A unique identifier for an existing Customer.'
+          format: uuid4
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/OrderItem'
+              minItems: 1
+              type: array
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+          description: Successful Response
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+          description: Not Found
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+
+  /v1/customers/{customer_id}/address:
+    get:
+      description: '***Request address for specified Customer.***'
+      summary: Get Customer Address Info
+      tags:
+      - Customers
+      parameters:
+      - description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+          A unique identifier for an existing Order.'
+        in: path
+        name: customer_id
+        required: true
+        schema:
+          description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+            A unique identifier for an existing Customer.'
+          format: uuid4
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerAddressResponse'
+          description: Successful Response
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+          description: Not Found
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+
+  /health:
+    get:
+      description: '***Health check endpoint..***'
+      summary: Health Check
+      tags:
+      - Health
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthSchema'
+
+components:
+  responses:
+    NotFound:
+      description: The specified resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    NotFoundError:
+      description: 'Define model for a http 404 exception (Not Found). '
+      properties:
+        detail:
+          default: Customer not found in DB
+          title: Detail
+          type: string
+      title: NotFoundError
+      type: object
+
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+
+    CreditCardSchema:
+      type: object
+      description: 'Representation of Credit Card Billing Information in the system. '
+      example:
+        Address: Stallstigen 30
+        Bank: NORDEA BANK AB
+        CVV: '808'
+        CardNumber: '5485848512008744'
+        Country: SWEDEN
+        Expiry: 07/2030
+        IssuingNetwork: MASTERCARD
+        MoneyRange: $804
+        Name: Barirah Chou
+      required:
+      - CVV
+      - Bank
+      - Name
+      - Expiry
+      - Address
+      - Country
+      - MoneyRange
+      - CardNumber
+      - IssuingNetwork
+      properties:
+        Address:
+          title: Address
+          type: string
+        Bank:
+          title: Bank
+          type: string
+        CVV:
+          title: Cvv
+          type: string
+        CardNumber:
+          title: Cardnumber
+          type: string
+        Country:
+          title: Country
+          type: string
+        Expiry:
+          title: Expiry
+          type: string
+        IssuingNetwork:
+          title: Issuingnetwork
+          type: string
+        MoneyRange:
+          title: Moneyrange
+          type: string
+        Name:
+          title: Name
+          type: string
+
+    CustomerAddressResponse:
+      type: object
+      description: 'Representation of Customer Address Information in the system. '
+      example:
+        name: Barirah Chou
+        street: Stallstigen 30
+        zipcode: 111 21
+        city: Stockholm
+      required:
+        - name
+        - street
+        - zipcode
+        - city
+      properties:
+        name:
+          type: string
+        street:
+          type: string
+        zipcode:
+          type: string
+        city:
+          type: string
+
+    CustomerResponse:
+      type: object
+      required:
+        - amount
+        - billing_info
+      properties:
+        amount:
+          description: 'Amount to pay in Euro for ordered meal(s). '
+          example: 6.25
+          minimum: 1.0
+          type: number
+        billing_info:
+          $ref: '#/components/schemas/CreditCardSchema'
+
+    Products:
+      description: 'Representation of valid products in the system. '
+      type: string
+      enum:
+      - Lasagna
+      - Double Cheeseburger
+      - Veil with glazed onions and blue cheese
+      - Vegetarian Salad with healthy produce
+
+    OrderItem:
+      type: object
+      required:
+        - product
+        - quantity
+      description: 'Required order item parameters. '
+      properties:
+        product:
+          $ref: '#/components/schemas/Products'
+        quantity:
+          default: 1
+          minimum: 1.0
+          title: Quantity
+          type: integer
+
+    HealthSchema:
+      type: object
+      description: 'Representation of service Health status in the system. '
+      example:
+        status: true
+        version: 1.0.0
+        name: CustomerService
+      required:
+        - status
+        - version
+        - name
+      properties:
+        status:
+          type: boolean
+        version:
+          type: string
+        name:
+          type: string

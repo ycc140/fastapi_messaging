@@ -1,0 +1,10 @@
+aio-pika==9.0.5
+aioredis==2.0.1
+fastapi==0.95.0
+hiredis==2.2.2
+httpx==0.23.3
+loguru==0.6.0
+motor==3.1.1
+python-dotenv==1.0.0
+ujson==5.7.0
+uvicorn==0.21.1

@@ -1,0 +1,175 @@
+openapi: 3.0.3
+
+info:
+  title: KitchenService API
+  description: API that manage the cooking of ordered meals in the kitchen
+  version: 1.0.0
+
+servers:
+  - url: http://127.0.0.1:8004
+    description: URL for local development and testing
+  - url: https://fictitious.com
+    description: main production server
+  - url: https://fictitious-staging.com
+    description: staging server for testing purposes only
+
+paths:
+  /v1/kitchen:
+    post:
+      summary: Schedules an ordered meal to be produced
+      tags:
+        - kitchen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KitchenPayload'
+      responses:
+        '202':
+          description: A JSON representation of the scheduled order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /health:
+    get:
+      description: '***Health check endpoint..***'
+      summary: Health Check
+      tags:
+      - Health
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthSchema'
+
+components:
+  responses:
+    UnprocessableEntity:
+      description: The payload contains invalid values.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The specified resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    OrderItemSchema:
+      additionalProperties: false
+      type: object
+      required:
+        - product
+        - quantity
+      properties:
+        product:
+          type: string
+          enum:
+            - Double Cheeseburger
+            - Lasagna
+            - Veil with glazed onions and blue cheese
+            - Vegetarian Salad with healthy produce
+        quantity:
+          type: integer
+          minimum: 1
+
+    KitchenPayload:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - metadata
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemSchema'
+        metadata:
+            $ref: '#/components/schemas/MetadataSchema'
+
+    KitchenResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - kitchen_id
+        - items
+        - scheduled
+        - status
+        - metadata
+      properties:
+        kitchen_id:
+          type: string
+          format: uuid
+        scheduled:
+          type: string
+          format: 'date-time'
+        status:
+          type: string
+          enum:
+            - cookingScheduled
+            - cookingMeal
+            - cookingDone
+            - pickedUp
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemSchema'
+        metadata:
+            $ref: '#/components/schemas/MetadataSchema'
+
+    MetadataSchema:
+      type: object
+      additionalProperties: false
+      description: 'Representation of Order metadata in the system.'
+      required:
+        - receiver
+        - order_id
+        - customer_id
+      properties:
+        receiver:
+          description: Requesting service.
+          example: OrderService
+          type: string
+        order_id:
+          description: Order ID of the Order currently being handled.
+          example: b76d019f-5937-4a14-8091-1d9f18666c93
+          type: string
+        customer_id:
+          description: Customer ID for the Order currently being handled.
+          example: f2861560-e9ed-4463-955f-0c55c3b416fb
+          type: string
+
+    HealthSchema:
+      type: object
+      description: 'Representation of service Health status in the system. '
+      example:
+        status: true
+        version: 1.0.0
+        name: KitchenService
+      required:
+        - status
+        - version
+        - name
+      properties:
+        status:
+          type: boolean
+        version:
+          type: string
+        name:
+          type: string
