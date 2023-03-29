@@ -1,0 +1,6 @@
+# pull official base image
+FROM redis:latest
+
+# Set local timezone.
+ENV TZ=Europe/Stockholm
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

@@ -1,0 +1,74 @@
+@startuml
+title Container diagram for Fictitious Food Home Delivery System
+
+' Include icons
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!define MASTER https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master
+!include MASTER/font-awesome-5/cc_mastercard.puml
+!include MASTER/font-awesome-5/users.puml
+!include <office/Servers/database_server>
+
+' Define longer texts
+!define DELIVERY Delivers the order to the Customers home
+!define CREDIT Handles Credit-Card payments and reimbursements
+!define MONGO Holds Order documents
+
+SHOW_PERSON_OUTLINE()
+' LAYOUT_LEFT_RIGHT()
+
+sprite fastapi <svg style="color: white" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+               <title>FastAPI</title><path d="M12 0C5.375 0 0 5.375 0 12c0 6.627 5.375 12 12 12 6.626 0 12-5.373
+               12-12 0-6.625-5.373-12-12-12zm-.624 21.62v-7.528H7.19L13.203 2.38v7.528h4.029L11.376 21.62z"
+               fill="white"></path></svg>
+
+System_Ext(dispatch, "Transport\n[Software System]", DELIVERY, $sprite="users")
+System_Ext(creditcard, "Credit Card Company \n[Software System]", CREDIT, $sprite="cc_mastercard")
+System_Ext(chef, "Restaurant\n[Software System]", "Prepares the meal", $sprite="users")
+Person_Ext(orderCustomer, "Customer\n[Person]", "Order a meal to be\nhome delivered")
+System_Ext(webapp, "Web Application\n[Software System]", "Serve the Customer", $sprite="fastapi")
+
+' Define container tag templates
+AddContainerTag("service", $sprite="fastapi", $legendText="RESTful API container", $shape=EightSidedShape())
+AddContainerTag("db", $sprite="database_server", $legendText="database container")
+
+System_Boundary(isend, "Fictitious Order Handling") {
+  Container(order, "OrderService", "Container: gunicorn/FastApi", "Handles Order workflow", $tags="service")
+  Container(kitchen, "KitchenService", "Container: gunicorn/FastApi", "Handles Restaurant activities", $tags="service")
+  Container(payment, "PaymentService", "Container: gunicorn/FastApi", "Handles Credit Card Payments", $tags="service")
+  Container(delivery, "DeliveryService", "Container: gunicorn/FastApi", "Handles Transport activities", $tags="service")
+  Container(customer, "CustomerService", "Container: gunicorn/FastApi", "Handles Customer data", $tags="service")
+  ContainerDb(db, "NoSQL Database", "Container: MongoDB", MONGO, $tags="db")
+
+}
+
+' Define rel tag templates
+AddRelTag("rabbitMq", $textColor="red", $lineColor="red", $lineStyle = DashedLine(), $legendText="RabbitMQ wire protocol")
+AddRelTag("mongoDb", $textColor="green", $lineColor="green", $legendText="MongoDB wire protocol")
+AddRelTag("http-hook", $textColor="blue", $lineColor="blue", $legendText="HTTP RESTful callback")
+AddRelTag("http", $textColor="black", $lineColor="black", $legendText="HTTP RESTful")
+
+BiRel(orderCustomer, webapp, "Reads from and writes to")
+Rel_L(webapp, order, "Reads from and writes to", "POST+GET (json)", $tags="http")
+BiRel_L(order, db, "Reads from and writes to", "json", $tags="mongoDb")
+BiRel_L(payment, db, "Reads from and writes to", "json", $tags="mongoDb")
+
+Rel(order, payment, "Writes to", "POST (json)", $tags="http")
+Rel_R(payment, customer, "Reads from", "GET (json)", $tags="http")
+Rel(payment, order, "Sends payment\nstatus to", "json", $tags="rabbitMq")
+
+Rel(order, kitchen, "Writes to", "POST (json)", $tags="http")
+Rel(kitchen, order, "Sends status\nupdates to", "json", $tags="rabbitMq")
+
+Rel(order, delivery, "Writes to", "POST (json)", $tags="http")
+Rel(order, customer, "Reads from", "GET (json)", $tags="http")
+Rel(delivery, order, "Sends status\nupdates to", "json", $tags="rabbitMq")
+
+Rel(kitchen, chef, "writes to", "POST (json)")
+Rel(chef, kitchen, "Callback from", "POST (json)", $tags="http-hook")
+Rel(delivery, dispatch, "Writes to", "POST (json)")
+Rel(dispatch, delivery, "Callback from", "POST (json)", $tags="http-hook")
+Rel(payment, creditcard, "Writes to", "POST (json)")
+Rel(creditcard, payment, "Callback from", "POST (json)", $tags="http-hook")
+
+SHOW_LEGEND()
+@enduml

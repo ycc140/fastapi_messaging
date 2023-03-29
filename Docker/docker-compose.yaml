@@ -1,0 +1,64 @@
+version: '3.7'
+
+services:
+
+  redis:
+    build:
+      context: .
+      dockerfile: Dockerfile.redis
+    restart: always
+    container_name: redis
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    networks:
+      - proxynet
+
+  mongo:
+    build:
+      context: .
+      dockerfile: Dockerfile.mongo
+    restart: always
+    container_name: mongo
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+    ports:
+      - 27017-27019:27017-27019
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=phoenix
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PWD}
+    networks:
+      - proxynet
+
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbitmq
+    restart: always
+    container_name: rabbitmq
+    volumes:
+      - rabbitmq-log:/var/log/rabbitmq
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - proxynet
+
+volumes:
+  redis-data:
+  mongo-data:
+  mongo-config:
+  rabbitmq-log:
+  rabbitmq-data:
+
+networks:
+  proxynet:
+    name: custom_network
