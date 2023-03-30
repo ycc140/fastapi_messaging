@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:37:08
-     $Rev: 45
+    $Date: 2023-03-30 17:38:58
+     $Rev: 49
 """
 
 # BUILTIN modules
@@ -51,7 +51,9 @@ class Service(FastAPI):
         self.rabbit_client = RabbitClient(config.rabbit_url,
                                           config.service_name,
                                           self.process_response_message)
-        self.level, self.logger = create_unified_logger(config.service_log_level)
+        self.level, self.logger = create_unified_logger(
+            config.service_log_level
+        )
 
     # ---------------------------------------------------------
     #
@@ -82,7 +84,8 @@ class Service(FastAPI):
 
         except ValueError as why:
             raw = f'{why}'.split('\n')
-            errmsg = ' '.join([item.split('(type=')[0].strip() for item in raw[1:]])
+            errmsg = ' '.join([item.split('(type=')[0].strip()
+                               for item in raw[1:]])
             self.logger.error(f"Message is discarded since {errmsg}.")
 
 
@@ -138,7 +141,9 @@ async def startup(service: Service):
     """ Initialize RabbitMQ and DB connection. """
 
     service.logger.info('Establishing RabbitMQ message queue consumer...')
-    service.connection = await asyncio.create_task(service.rabbit_client.consume())
+    service.connection = await asyncio.create_task(
+        service.rabbit_client.consume()
+    )
 
     service.logger.info('Establishing MongoDB connection...')
     await Engine.connect_to_mongo()
