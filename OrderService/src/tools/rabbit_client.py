@@ -6,22 +6,18 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-20 01:00:44
-     $Rev: 22
+    $Date: 2023-03-30 17:41:49
+     $Rev: 50
 """
 
 # BUILTIN modules
-import json
 import asyncio
 from typing import Callable, Optional
 
 # Third party modules
+import ujson as json
 from aio_pika import connect, connect_robust, Message, DeliveryMode
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
-
-# Constants
-EXCHANGE_NAME = 'service'
-""" Used RabbitMQ exchange. """
 
 
 # -----------------------------------------------------------------------------
@@ -105,7 +101,7 @@ class RabbitClient:
 
         message_body = Message(
             content_type='application/json',
-            body=json.dumps(message).encode(),
+            body=json.dumps(message, ensure_ascii=False).encode(),
             delivery_mode=DeliveryMode.PERSISTENT)
         await channel.default_exchange.publish(
             routing_key=queue, message=message_body)
