@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:37:08
-     $Rev: 45
+    $Date: 2023-03-30 13:14:04
+     $Rev: 48
 """
 
 # BUILTIN modules
@@ -42,6 +42,7 @@ class OrderApiLogic:
             id: UUID4,
             created: datetime,
             items: OrderItems,
+            repository: OrdersRepository,
             updated: List[StateUpdateSchema],
             status: Status, customer_id: UUID4,
             kitchen_id: Optional[UUID4] = None,
@@ -67,7 +68,7 @@ class OrderApiLogic:
         self.customer_id = customer_id
 
         # Initialize objects.
-        self.repo = OrdersRepository()
+        self.repo = repository
         self.cache = UrlCache(config.redis_url)
 
     # ---------------------------------------------------------
@@ -105,7 +106,7 @@ class OrderApiLogic:
     async def _pay(self) -> None:
         """ Trigger payment of ordered items.
 
-        :raise HTTPException [400]: when PaymentService response code != 201.
+        :raise HTTPException [400]: when PaymentService response code != 202.
         :raise HTTPException [500]: when connection with PaymentService failed.
         """
         meta = MetadataSchema(order_id=self.id,
@@ -122,7 +123,7 @@ class OrderApiLogic:
                                              json=payment.dict(),
                                              timeout=config.url_timeout)
 
-            if response.status_code != 201:
+            if response.status_code != 202:
                 errmsg = f"Failed PaymentService POST request for URL {url} with Order ID "  \
                          f"{self.id} - [{response.status_code}: {response.json()['detail']}]."
                 raise HTTPException(status_code=400, detail=errmsg)
@@ -136,7 +137,7 @@ class OrderApiLogic:
     async def _reimburse(self) -> None:
         """ Trigger reimbursement of cancelled order items.
 
-        :raise HTTPException [400]: when PaymentService response code != 201.
+        :raise HTTPException [400]: when PaymentService response code != 202.
         :raise HTTPException [500]: when connection with PaymentService failed.
         """
         meta = MetadataSchema(order_id=self.id,
@@ -153,7 +154,7 @@ class OrderApiLogic:
                                              json=payment.dict(),
                                              timeout=config.url_timeout)
 
-            if response.status_code != 201:
+            if response.status_code != 202:
                 errmsg = f"Failed PaymentService POST request for URL {url} with Order ID "  \
                          f"{self.id} - [{response.status_code}: {response.json()['detail']}]."
                 raise HTTPException(status_code=400, detail=errmsg)
@@ -167,7 +168,7 @@ class OrderApiLogic:
     async def create(self) -> OrderResponse:
         """ Charge the Customers Credit Card and create a new order in DB.
 
-        :raise HTTPException [400]: when PaymentService response code != 201.
+        :raise HTTPException [400]: when PaymentService response code != 202.
         :raise HTTPException [500]: when connection with PaymentService failed.
         :raise HTTPException [400]: when create order in DB api_db.orders failed.
         """
