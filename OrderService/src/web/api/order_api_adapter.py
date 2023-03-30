@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright: Wilde Consulting
+  License: Apache 2.0
+
+VERSION INFO::
+    $Repo: fastapi_messaging
+  $Author: Anders Wiklund
+    $Date: 2023-03-30 12:13:57
+     $Rev: 47
+"""
 
 # BUILTIN modules
 from typing import List
@@ -15,7 +26,7 @@ from ...repository.order_data_adapter import OrdersRepository
 
 # ------------------------------------------------------------------------
 #
-class OrdersServiceApi:
+class OrdersApi:
     """
     This class implements the web API layer adapter.
     """
@@ -31,6 +42,23 @@ class OrdersServiceApi:
 
     # ---------------------------------------------------------
     #
+    async def _order_of(self, order_id: UUID4) -> OrderModel:
+        """ Return specified order.
+
+        :param order_id: Order id for order to find.
+        :return: Found Order object.
+        :raise HTTPException [404]: when Order not found in DB api_db.orders.
+        """
+        db_order = await self.repo.read(order_id)
+
+        if not db_order:
+            errmsg = f"{order_id=} not found in DB api_db.orders"
+            raise HTTPException(status_code=404, detail=errmsg)
+
+        return db_order
+
+    # ---------------------------------------------------------
+    #
     async def list_orders(self) -> List[OrderResponse]:
         """ List all existing orders in DB api_db.orders.
 
@@ -39,6 +67,18 @@ class OrdersServiceApi:
         :return: List of found orders.
         """
         return await self.repo.read_all()
+
+    # ---------------------------------------------------------
+    #
+    async def get_order(self, order_id: UUID4) -> OrderResponse:
+        """ Return specified order.
+
+        :param order_id: Order id for order to find.
+        :return: Found Order object.
+        :raise HTTPException [404]: when Order not found in DB api_db.orders.
+        """
+        db_order = await self._order_of(order_id)
+        return OrderResponse(**db_order.dict())
 
     # ---------------------------------------------------------
     #
@@ -58,23 +98,6 @@ class OrdersServiceApi:
 
     # ---------------------------------------------------------
     #
-    async def get_order(self, order_id: UUID4) -> OrderResponse:
-        """ Return specified order.
-
-        :param order_id: Order id for order to find.
-        :return: Found Order object.
-        :raise HTTPException [404]: when Order not found in DB api_db.orders.
-        """
-        response = await self.repo.read(order_id)
-
-        if not response:
-            errmsg = f"{order_id=} not found in DB api_db.orders"
-            raise HTTPException(status_code=404, detail=errmsg)
-
-        return OrderResponse(**response.dict())
-
-    # ---------------------------------------------------------
-    #
     async def cancel_order(self, order_id: UUID4) -> OrderResponse:
         """ Cancel specified order.
 
@@ -83,8 +106,7 @@ class OrdersServiceApi:
         :raise HTTPException [400]: when failed to update DB api_db.orders.
         :raise HTTPException [404]: when Order not found in DB api_db.orders.
         """
-        response = await self.get_order(order_id)
-        db_order = OrderModel(**response.dict())
+        db_order = await self._order_of(order_id)
         order = OrderApiLogic(**db_order.dict())
         return await order.cancel()
 
@@ -96,6 +118,6 @@ class OrdersServiceApi:
         :param order_id: id for order to delete.
         :raise HTTPException [404]: when Order not found in DB api_db.orders.
         """
-        response = await self.get_order(order_id)
-        order = OrderApiLogic(**response.dict())
+        db_order = await self._order_of(order_id)
+        order = OrderApiLogic(**db_order.dict())
         await order.delete()
