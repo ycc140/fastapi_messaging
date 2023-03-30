@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-30 12:13:57
-     $Rev: 47
+    $Date: 2023-03-30 13:14:04
+     $Rev: 48
 """
 
 # BUILTIN modules
@@ -33,12 +33,12 @@ class OrdersApi:
 
     # ---------------------------------------------------------
     #
-    def __init__(self, orders_repository: OrdersRepository):
+    def __init__(self, repository: OrdersRepository):
         """ The class initializer.
 
-        :param orders_repository: Data layer handler object.
+        :param repository: Data layer handler object.
         """
-        self.repo = orders_repository
+        self.repo = repository
 
     # ---------------------------------------------------------
     #
@@ -82,8 +82,7 @@ class OrdersApi:
 
     # ---------------------------------------------------------
     #
-    @staticmethod
-    async def create_order(payload: OrderPayload) -> OrderResponse:
+    async def create_order(self, payload: OrderPayload) -> OrderResponse:
         """ Create a new order in DB and make a payment request.
 
         :param payload: Incoming Order request.
@@ -93,7 +92,7 @@ class OrdersApi:
         :raise HTTPException [400]: when create order in DB api_db.orders failed.
         """
         db_order = OrderModel(**payload.dict())
-        order = OrderApiLogic(**db_order.dict())
+        order = OrderApiLogic(repository=self.repo, **db_order.dict())
         return await order.create()
 
     # ---------------------------------------------------------
@@ -107,7 +106,7 @@ class OrdersApi:
         :raise HTTPException [404]: when Order not found in DB api_db.orders.
         """
         db_order = await self._order_of(order_id)
-        order = OrderApiLogic(**db_order.dict())
+        order = OrderApiLogic(repository=self.repo, **db_order.dict())
         return await order.cancel()
 
     # ---------------------------------------------------------
@@ -119,5 +118,5 @@ class OrdersApi:
         :raise HTTPException [404]: when Order not found in DB api_db.orders.
         """
         db_order = await self._order_of(order_id)
-        order = OrderApiLogic(**db_order.dict())
+        order = OrderApiLogic(repository=self.repo, **db_order.dict())
         await order.delete()
