@@ -3,8 +3,7 @@ Elaborate Microservice async example with FastAPI, RabbitMQ, MongoDB and Redis.
 
 ## Author: Anders Wiklund
 
-This repository is structured around the **Medium** article parts. There's one folder per part. Each folder 
-contains all the code you need to follow along with the examples for the corresponding part.
+This repository is the basis for a series of **Medium** articles.
 
 ### Here's a brief outline of the article parts
 
