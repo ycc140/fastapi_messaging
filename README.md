@@ -17,7 +17,7 @@ This part talks about the OrderService architecture and design patterns that are
 This part adds initial configuration handling using the Pydantic **BaseSettings** class. Project parameters in an .env file. Later on when we add databaswe 
 support and Authentication passwords we will use Pydantic secrets files. In part9 we will integrate Docker secrets with Pydantic secrets.
 
-#### Part 4: PaymentService Architecture and Design patterns
+#### [Part 4: PaymentService Architecture and Design patterns](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part4-e50b22ce0a04)
 This part talks about the PaymentService architecture and design patterns that are used and the resulting directory structure of the implementation.
 
 #### Part 5: Putting it all together
