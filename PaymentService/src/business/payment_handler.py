@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:37:08
-     $Rev: 45
+    $Date: 2023-03-31 21:37:40
+     $Rev: 54
 """
 
 
@@ -65,7 +65,7 @@ class PaymentLogic:
         # Fake the billing work (URL is fake, so it will never connect).
         with contextlib.suppress(ConnectError):
             async with AsyncClient() as client:
-                url = "http://fakeCreditCardCompany.com/v1/billings"
+                url = "http://fakeCreditCardCompany.com/billings"
                 resp = await client.post(url=url, json=payload.dict(),
                                          timeout=config.url_timeout)
 
@@ -93,7 +93,7 @@ class PaymentLogic:
         # Fake the reimbursement work (URL is fake, so it will never connect).
         with contextlib.suppress(ConnectError):
             async with AsyncClient() as client:
-                url = "http://fakeCreditCardCompany.com/v1/billings/reimburse"
+                url = "http://fakeCreditCardCompany.com/billings/reimburse"
                 resp = await client.post(url=url, json=payload.dict(),
                                          timeout=config.url_timeout)
 
@@ -216,7 +216,7 @@ class PaymentLogic:
 
     # ---------------------------------------------------------
     #
-    async def process_response(self, payload: BillingCallback):
+    async def process_response(self, payload: BillingCallback) -> BillingCallback:
         """ Process payment/reimbursement callback response.
 
          Implemented logic:
@@ -225,6 +225,7 @@ class PaymentLogic:
            - Send the billing response to the metadata requester using RabbitMQ.
 
         :param payload: Payment callback response data.
+        :return: Received payload.
         :raise HTTPException [404]: when caller_id does not exist in DB.
         """
         try:
@@ -243,11 +244,13 @@ class PaymentLogic:
             await self.repo.update(payment)
 
             # Send response message to requester.
-            await self.client.send_message(response.dict(),
-                                           payment.metadata.receiver)
+            await self.client.send_message(message=response.dict(),
+                                           queue=payment.metadata.receiver)
 
             logger.info(f"Sent Payment response to {payment.metadata.receiver} "
                         f"with status '{payload.status}' for Order '{payload.caller_id}'.")
+
+            return payment
 
         except RuntimeError as why:
             logger.error(f'{why}')
