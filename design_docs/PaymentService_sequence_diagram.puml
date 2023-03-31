@@ -1,0 +1,104 @@
+@startuml
+
+' documentation: https://plantuml.com/sequence-diagram
+
+title PaymentService sequence diagram
+
+hide footbox
+autonumber "<B>00"
+skinparam roundcorner 20
+
+participant OS [
+    =OrderService
+    ----
+    Handles Order
+    workflow
+]
+
+database "<B>MongoDB</B>" as DB
+
+participant PS [
+    =PaymentService
+    ----
+    Handles Credit Card
+    Payments
+]
+
+participant CS [
+    =CustomerService
+    ----
+    Handles Customer
+    data
+]
+
+entity "<B>Credit Card billing\n<B>[company]</B>" as CARD
+
+OS -> PS: /payments\n[POST]
+activate OS
+activate PS
+PS -> CS: /customers/xxx/billing\n[POST]
+activate CS
+CS --> PS: amount + billing data\n[response-status: 201]
+
+deactivate CS
+PS -> CARD: /billings\n[POST}
+activate CARD
+CARD --> PS: [response-status: 202]
+PS -[#green]/ DB: Create payment
+PS --> OS: [response-status: 202]
+deactivate PS
+
+note over CARD
+Billing usually takes
+      5-20 seconds
+end note
+
+CARD -[#blue]/ PS: status: paid\n[POST callback]
+activate PS
+PS -[#green]/ DB: Read payment
+
+alt #LightBlue caller_id not found
+    PS --> CARD: [response-status: 404]
+else caller_id exists
+    PS -[#green]/ DB: Update payment
+    PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
+    deactivate OS
+    PS --> CARD: [response-status: 201]
+    deactivate CARD
+    deactivate PS
+end
+
+OS -> PS: /payment/xxx/reimburse\n[POST]
+activate OS
+activate PS
+PS -> CS: /customers/xxx/billing\n[POST]
+activate CS
+CS --> PS: amount + billing data\n[response-status: 201]
+deactivate CS
+PS -> CARD: /billings/reimburse\n[POST]
+activate CARD
+CARD --> PS: [response-status: 202]
+PS --> OS: [response-status: 202]
+deactivate PS
+
+note over CARD
+Reimbursement usually
+  takes 5-20 seconds.
+end note
+
+CARD -[#blue]/ PS: status: reimbursed\n[POST callback]
+activate PS
+PS -[#green]/ DB: Read payment
+
+alt #LightBlue caller_id not found
+    PS --> CARD: [response-status: 404]
+else caller_id exists
+    PS -[#green]/ DB: Update payment
+    PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
+    deactivate OS
+    PS --> CARD: [response-status: 201]
+    deactivate CARD
+    deactivate PS
+end
+
+@enduml

@@ -12,14 +12,14 @@ actor "<B>Customer" as CUST
 
 boundary "<B>Web\n<B>Application</B>" as WEB
 
-database "<B>MongoDB</B>" as DB
-
 participant OS [
     =OrderService
     ----
     Handles Order
     workflow
 ]
+
+database "<B>MongoDB</B>" as DB
 
 participant PS [
     =PaymentService
@@ -63,9 +63,10 @@ PS -> CS: /customers/xxx/billing\n[POST]
 activate CS
 CS --> PS: amount + billing data\n[response-status: 201]
 deactivate CS
-PS -> CARD: /billing\n[POST}
+PS -> CARD: /billings\n[POST}
 activate CARD
 CARD --> PS: [response-status: 202]
+PS -[#green]/ DB: Create payment
 PS --> OS: [response-status: 202]
 deactivate PS
 OS -[#green]/ DB: Add order
@@ -79,11 +80,20 @@ Billing usually takes
 end note
 
 CARD -[#blue]/ PS: status: paid\n[POST callback]
-deactivate CARD
 activate PS
-PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
-deactivate PS
-activate OS
+PS -[#green]/ DB: Read payment
+
+alt #LightBlue caller_id not found
+    PS --> CARD: [response-status: 404]
+else caller_id exists
+    PS -[#green]/ DB: Update payment
+    PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
+    activate OS
+    PS --> CARD: [response-status: 201]
+    deactivate CARD
+    deactivate PS
+end
+
 OS -[#green]/ DB: Update order
 OS -> DS: /deliveries\n[POST]
 activate DS
@@ -129,7 +139,7 @@ alt #LightYellow Cancel current Order
     activate CS
     CS --> PS: amount + billing data\n[response-status: 201]
     deactivate CS
-    PS -> CARD: /v1/billings/reimburse\n[POST]
+    PS -> CARD: /billings/reimburse\n[POST]
     activate CARD
     CARD --> PS: [response-status: 202]
     PS --> OS: [response-status: 202]
@@ -141,12 +151,20 @@ alt #LightYellow Cancel current Order
       takes 5-20 seconds.
     end note
 
-    CARD -[#blue]/ PS: status: reimbursed\n[POST callback]
-    deactivate CARD
+    CARD -[#blue]/ PS: status: paid\n[POST callback]
     activate PS
-    PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
-    deactivate PS
-    activate OS
+    PS -[#green]/ DB: Read payment
+
+    alt #LightBlue caller_id not found
+        PS --> CARD: [response-status: 404]
+    else caller_id exists
+        PS -[#green]/ DB: Update payment
+        PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
+        activate OS
+        PS --> CARD: [response-status: 201]
+        deactivate CARD
+        deactivate PS
+    end
 
     OS -[#green]/ DB: Update order
     deactivate OS
@@ -156,8 +174,9 @@ else continue waiting for an available driver
     DELIVERY -[#blue]/ DS: status:driverAvailable\n[POST callback]
     activate DS
     DS --[#red]/ OS: delivery status\n[RabbitMQ wire protocol]
-    deactivate DS
     activate OS
+    DS --> DELIVERY: [response-status: 201]
+    deactivate DS
     OS -[#green]/ DB: Update order
     OS -> KS: /kitchen\n[POST]
     activate KS
@@ -177,25 +196,28 @@ else continue waiting for an available driver
     CHEF -[#blue]/ KS: status: cookingMeal\n[POST callback]
     activate KS
     KS --[#red]/ OS: kitchen status\n[RabbitMQ wire protocol]
-    deactivate KS
     activate OS
+    KS --> CHEF: [response-status: 201]
+    deactivate KS
     OS -[#green]/ DB: Update order
     deactivate OS
 
     CHEF -[#blue]/ KS: status: cookingDone\n[POST callback]
     activate KS
     KS --[#red]/ OS: kitchen status\n[RabbitMQ wire protocol]
-    deactivate KS
     activate OS
+        KS --> CHEF: [response-status: 201]
+    deactivate KS
     OS -[#green]/ DB: Update order
     deactivate OS
 
     CHEF -[#blue]/ KS: status: pickedUp\n[POST callback]
-    deactivate CHEF
     activate KS
     KS --[#red]/ OS: kitchen status\n[RabbitMQ wire protocol]
-    deactivate KS
     activate OS
+    KS --> CHEF: [response-status: 201]
+    deactivate CHEF
+    deactivate KS
     OS -[#green]/ DB: Update order
     deactivate OS
 
@@ -207,17 +229,19 @@ else continue waiting for an available driver
     DELIVERY -[#blue]/ DS: status: inTransit\n[POST callback]
     activate DS
     DS --[#red]/ OS: delivery status\n[RabbitMQ wire protocol]
-    deactivate DS
     activate OS
+    DS --> DELIVERY: [response-status: 201]
+    deactivate DS
     OS -[#green]/ DB: Update order
     deactivate OS
 
     DELIVERY -[#blue]/ DS: status: delivered\n[POST callback]
-    deactivate DELIVERY
     activate DS
     DS --[#red]/ OS: delivery status\n[RabbitMQ wire protocol]
-    deactivate DS
     activate OS
+    DS --> DELIVERY: [response-status: 201]
+    deactivate DELIVERY
+    deactivate DS
     OS -[#green]/ DB: Update order
     deactivate OS
 end
