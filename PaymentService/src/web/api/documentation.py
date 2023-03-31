@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:46:22
-     $Rev: 46
+    $Date: 2023-03-31 18:44:42
+     $Rev: 51
 """
 
 
@@ -105,6 +105,7 @@ This service handles Customer Credit Card payments using external Credit Card Co
 
 <br>**The following HTTP status codes are returned:**
   * `200:` Successful Health response.
+  * `201:` Successful POST callback response.
   * `202:` Successful POST response.
   * `400:` Failed internal Microservice API call.
   * `422:` Validation error, supplied payload is incorrect.
