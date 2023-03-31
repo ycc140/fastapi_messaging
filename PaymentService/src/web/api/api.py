@@ -6,12 +6,9 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:46:22
-     $Rev: 46
+    $Date: 2023-03-31 20:31:23
+     $Rev: 53
 """
-
-# BUILTIN modules
-import asyncio
 
 # Third party modules
 from fastapi import APIRouter, status
@@ -73,12 +70,11 @@ async def reimburse_payment(payload: PaymentPayload) -> PaymentAcknowledge:
 @router.post(
     '/callback',
     response_model=BillingCallback,
-    status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_201_CREATED,
 )
 async def billing_response(payload: BillingCallback) -> BillingCallback:
     """ **Process callback response.** """
     worker = PaymentLogic(repository=PaymentsRepository(),
                           cache=UrlCache(config.redis_url),
                           client=RabbitClient(config.rabbit_url))
-    await worker.process_response(payload)
-    return payload
+    return await worker.process_response(payload)
