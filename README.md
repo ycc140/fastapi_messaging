@@ -14,11 +14,14 @@ This part talks about the problem space and a solution to handle asynchronous ev
 This part talks about the OrderService architecture and design patterns that are used and the resulting directory structure of the implementation.
 
 #### [Part 3: OrderService usage of RabbitMQ](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part3-d73393739277)
-This part adds initial configuration handling using the Pydantic **BaseSettings** class. Project parameters in an .env file. Later on when we add databaswe 
-support and Authentication passwords we will use Pydantic secrets files. In part9 we will integrate Docker secrets with Pydantic secrets.
+This part talks abour RabbitMQ integration with FastAPI.
 
 #### [Part 4: PaymentService Architecture and Design patterns](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part4-e50b22ce0a04)
 This part talks about the PaymentService architecture and design patterns that are used and the resulting directory structure of the implementation.
 
-#### Part 5: Putting it all together
+#### Part 5: FastAPI enhancements
+This part adds initial configuration handling using the Pydantic **BaseSettings** class. Project parameters in an .env file. External component connection URLs 
+are using Pydantic secrets files. We also go through unified logging and OpenAPI documentation.
+
+#### Part 6: Putting it all together
 This part ties it all together. How to run it, simulators and all.
