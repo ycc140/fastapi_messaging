@@ -19,7 +19,7 @@ This part talks abour RabbitMQ integration with FastAPI.
 #### [Part 4: PaymentService Architecture and Design patterns](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part4-e50b22ce0a04)
 This part talks about the PaymentService architecture and design patterns that are used and the resulting directory structure of the implementation.
 
-#### (Part 5: FastAPI enhancements)(https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part5-300768a028e6)
+#### [Part 5: FastAPI enhancements](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part5-300768a028e6)
 This part adds initial configuration handling using the Pydantic **BaseSettings** class. Project parameters in an .env file. External component connection URLs 
 are using Pydantic secrets files. We also go through unified logging and OpenAPI documentation.
 
