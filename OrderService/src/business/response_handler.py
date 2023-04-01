@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-23 18:33:23
-     $Rev: 34
+    $Date: 2023-04-01 17:51:19
+     $Rev: 55
 """
 
 # BUILTIN modules
@@ -93,7 +93,7 @@ class OrderResponseLogic:
                 resp = await client.post(url=url, json=payload.dict(),
                                          timeout=config.url_timeout)
 
-            if resp.status_code != 201:
+            if resp.status_code != 202:
                 errmsg = f"Failed {service} POST request for URL {url} - " \
                          f"[{resp.status_code}: {resp.json()['detail']}]."
                 raise RuntimeError(errmsg)
@@ -127,7 +127,7 @@ class OrderResponseLogic:
                 resp = await client.post(url=url, json=payload.dict(),
                                          timeout=config.url_timeout)
 
-            if resp.status_code != 201:
+            if resp.status_code != 202:
                 errmsg = f"Failed KitchenService POST request for URL {url} " \
                          f"- [{resp.status_code}: {resp.json()['detail']}]."
                 raise RuntimeError(errmsg)
