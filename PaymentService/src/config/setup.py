@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-21 02:16:53
-     $Rev: 26
+    $Date: 2023-04-01 21:09:57
+     $Rev: 56
 """
 
 # BUILTIN modules
@@ -35,7 +35,7 @@ class Configuration(BaseSettings):
 
     # Service parameters.
     service_name: str = MISSING_ENV
-    service_log_level: str = 'info'
+    service_log_level: str = MISSING_ENV
 
     # External resource parameters.
     url_timeout: tuple = (1.0, 5.0)
