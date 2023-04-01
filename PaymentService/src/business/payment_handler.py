@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-31 21:37:40
-     $Rev: 54
+    $Date: 2023-04-01 17:51:19
+     $Rev: 55
 """
 
 
@@ -250,7 +250,7 @@ class PaymentLogic:
             logger.info(f"Sent Payment response to {payment.metadata.receiver} "
                         f"with status '{payload.status}' for Order '{payload.caller_id}'.")
 
-            return payment
+            return payload
 
         except RuntimeError as why:
             logger.error(f'{why}')
