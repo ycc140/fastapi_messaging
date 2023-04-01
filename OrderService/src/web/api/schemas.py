@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:37:08
-     $Rev: 45
+    $Date: 2023-04-01 17:51:19
+     $Rev: 55
 """
 
 # BUILTIN modules
@@ -67,6 +67,7 @@ class OrderResponse(OrderItems):
 # ------------------------------------------------------------------------
 #
 class ValidStatus(BaseModel):
+    """ Used for validation of received status responses. """
     status: Status
 
 
