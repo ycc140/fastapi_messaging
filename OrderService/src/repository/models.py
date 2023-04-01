@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:37:08
-     $Rev: 45
+    $Date: 2023-04-01 17:51:19
+     $Rev: 55
 """
 
 # BUILTIN modules
@@ -109,21 +109,12 @@ class MongoBase(BaseModel):
 
 # ---------------------------------------------------------
 #
-class OrderPayload(OrderItems):
-    """ Payload parameters required when creating an order. """
-    customer_id: UUID4 = Field(**order_doc['customer_id'])
-
-
-# ---------------------------------------------------------
-#
 class StateUpdateSchema(BaseModel):
     """ Representation of an Order status history in the system. """
     status: Status = Field(**order_doc['status'])
     when: datetime = Field(default_factory=datetime.utcnow, **order_doc['when'])
 
 
-# ---------------------------------------------------------
-#
 class OrderUpdateModel(MongoBase):
     """ Representation of an Order in the system. """
     items: conlist(OrderItem, min_items=1)
@@ -135,8 +126,6 @@ class OrderUpdateModel(MongoBase):
     created: datetime = Field(default_factory=datetime.utcnow, **order_doc['created'])
 
 
-# ---------------------------------------------------------
-#
 class OrderModel(OrderUpdateModel):
     """ Representation of an Order in the system. """
     id: UUID4 = Field(default_factory=uuid4)
