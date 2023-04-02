@@ -23,5 +23,5 @@ This part talks about the PaymentService architecture and design patterns that a
 This part adds initial configuration handling using the Pydantic **BaseSettings** class. Project parameters in an .env file. External component connection URLs 
 are using Pydantic secrets files. We also go through unified logging and OpenAPI documentation.
 
-#### Part 6: Putting it all together
+#### [Part 6: Putting it all together](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part6-29783c2278c4)
 This part ties it all together. How to run it, simulators and all.
