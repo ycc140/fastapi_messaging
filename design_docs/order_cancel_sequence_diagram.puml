@@ -1,0 +1,161 @@
+@startuml
+
+' documentation: https://plantuml.com/sequence-diagram
+
+title Order sequence diagram
+
+hide footbox
+autonumber "<B>00"
+skinparam roundcorner 20
+
+actor "<B>Customer" as CUST
+
+boundary "<B>Web\n<B>Application</B>" as WEB
+
+participant OS [
+    =OrderService
+    ----
+    Handles Order
+    workflow
+]
+
+database "<B>MongoDB</B>" as DB
+
+participant PS [
+    =PaymentService
+    ----
+    Handles Credit Card
+    Payments
+]
+
+participant CS [
+    =CustomerService
+    ----
+    Handles Customer
+    data
+]
+
+participant DS [
+    =DeliveryService
+    ----
+    Handles Transport
+    activities
+]
+
+participant KS [
+    =KitchenService
+    ----
+    Handles Restaurant
+    activities
+]
+
+entity "<B>Credit Card billing\n<B>[company]</B>" as CARD
+entity "<B>Restaurant\n<B>[company]</B>" as CHEF
+entity "<B>Transport\n<B>[company]</B>" as DELIVERY
+
+CUST -> WEB: place order
+activate WEB
+WEB -> OS: /orders\n[POST]
+activate OS
+OS -> PS: /payments\n[POST]
+activate PS
+PS -> CS: /customers/xxx/billing\n[POST]
+activate CS
+CS --> PS: amount + billing data\n[response-status: 201]
+deactivate CS
+PS -> CARD: /billings\n[POST}
+activate CARD
+CARD --> PS: [response-status: 202]
+PS -[#green]/ DB: Create payment
+PS --> OS: [response-status: 202]
+deactivate PS
+OS -[#green]/ DB: Add order
+OS --> WEB: [response-status: 202]
+deactivate OS
+deactivate WEB
+
+note over CARD
+Billing usually takes
+      5-20 seconds
+end note
+
+CARD -[#blue]/ PS: status: paid\n[POST callback]
+activate PS
+PS -[#green]/ DB: Read payment
+
+PS -[#green]/ DB: Update payment
+PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
+activate OS
+PS --> CARD: [response-status: 201]
+deactivate CARD
+deactivate PS
+
+OS -[#green]/ DB: Update order
+OS -> DS: /deliveries\n[POST]
+activate DS
+DS -> CS: /customers/xxx/address\n[GET]
+activate CS
+CS --> DS: customer address\n[response-status: 200]
+deactivate CS
+DS -> DELIVERY: /delivery-request\n[POST]
+activate DELIVERY
+DELIVERY --> DS: status: deliveryScheduled\n[response-status: 202]
+DS --> OS: delivery status\n[response-status: 202]
+deactivate DS
+OS -[#green]/ DB: Update order
+deactivate OS
+
+note over DELIVERY
+Finding an available driver takes
+an unknown number of minutes,
+     but mostly 5-10 minutes.
+end note
+
+CUST -> WEB: cancel order
+activate WEB
+WEB -> OS: /orders/xxx/cancel\n[POST]
+activate OS
+OS -> DS: /deliveries/xxx/cancel\n[POST]
+activate DS
+DS -> DELIVERY: /delivery-request/xxx/cancel\n[PUT]
+DELIVERY --> DS: status: deliveryCancelled\n[response-status: 201]
+deactivate DELIVERY
+DS --> OS: [response-status: 201]
+deactivate DS
+OS -[#green]/ DB: Update order
+OS --> WEB: [response-status: 202]
+deactivate WEB
+
+OS -> PS: /payment/xxx/reimburse\n[POST]
+activate PS
+PS -> CS: /customers/xxx/billing\n[POST]
+activate CS
+CS --> PS: amount + billing data\n[response-status: 201]
+deactivate CS
+PS -> CARD: /billings/reimburse\n[POST]
+activate CARD
+CARD --> PS: [response-status: 202]
+PS --> OS: [response-status: 202]
+deactivate PS
+deactivate OS
+
+note over CARD
+Reimbursement usually
+  takes 5-20 seconds.
+end note
+
+CARD -[#blue]/ PS: status: paid\n[POST callback]
+activate PS
+PS -[#green]/ DB: Read payment
+
+PS -[#green]/ DB: Update payment
+PS --[#red]/ OS: payment status\n[RabbitMQ wire protocol]
+activate OS
+PS --> CARD: [response-status: 201]
+deactivate CARD
+deactivate PS
+
+OS -[#green]/ DB: Update order
+deactivate OS
+
+@enduml
