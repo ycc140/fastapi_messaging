@@ -2,7 +2,7 @@
 
 ' documentation: https://plantuml.com/sequence-diagram
 
-title Order sequence diagram
+title Successful Order sequence diagram
 
 hide footbox
 autonumber "<B>00"
@@ -111,7 +111,6 @@ an unknown number of minutes,
      but mostly 5-10 minutes.
 end note
 
-activate DELIVERY
 DELIVERY -[#blue]/ DS: status:driverAvailable\n[POST callback]
 activate DS
 DS --[#red]/ OS: delivery status\n[RabbitMQ wire protocol]
