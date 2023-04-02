@@ -6,33 +6,27 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:37:08
-     $Rev: 45
+    $Date: 2023-04-02 14:01:36
+     $Rev: 57
 """
 
 # BUILTIN modules
-from enum import Enum
 from uuid import UUID
 
 # Third party modules
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, validator
 
 # Local modules
-from ..repository.models import OrderItems
-from ..web.api.documentation import (metadata_example, address_example,
-                                     metadata_documentation as meta_doc)
+from ..repository.models import OrderItems, Status
 
 
 # ---------------------------------------------------------
 #
 class MetadataSchema(BaseModel):
     """ Representation of Order metadata in the system. """
-    receiver: str = Field(**meta_doc['receiver'])
-    order_id: str = Field(**meta_doc['order_id'])
-    customer_id: str = Field(**meta_doc['customer_id'])
-
-    class Config:
-        schema_extra = {"example": metadata_example}
+    receiver: str
+    order_id: str
+    customer_id: str
 
     @validator('*', pre=True)
     def decode_values(cls, value):
@@ -49,19 +43,10 @@ class PaymentPayload(OrderItems):
 
 # ---------------------------------------------------------
 #
-class PaymentStatus(str, Enum):
-    """ Representation of valid payment response states. """
-
-    PAID = "paymentPaid"
-    FAILED = "paymentFailed"
-
-
-# ---------------------------------------------------------
-#
 class PaymentResponse(BaseModel):
     """ Representation of a payment response in the system. """
     metadata: MetadataSchema
-    status: PaymentStatus = Field(send_example=PaymentStatus.PAID)
+    status: Status
 
 
 # ---------------------------------------------------------
@@ -79,9 +64,6 @@ class CustomerAddressSchema(BaseModel):
     city: str
     street: str
     zipcode: str
-
-    class Config:
-        schema_extra = {"example": address_example}
 
 
 # ---------------------------------------------------------
