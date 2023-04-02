@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:46:22
-     $Rev: 46
+    $Date: 2023-04-02 14:01:36
+     $Rev: 57
 """
 
 from fastapi import Path
@@ -15,13 +15,6 @@ from fastapi import Path
 # Local modules
 from ...config.setup import config
 
-
-tags_metadata = [
-    {
-        "name": "Orders",
-        "description": f"The ***{config.service_name}*** handle Orders for the Fictitious Company.",
-    }
-]
 
 order_id_documentation = Path(
     ...,
@@ -61,30 +54,12 @@ resource_example = {
     ]
 }
 
-address_example = {
-    "zipcode": '111 21',
-    "city": 'Stockholm',
-    "name": "Barirah Chou",
-    "street": "Stallstigen 30",
-}
-
-metadata_example = {
-    "msg_type": "PaymentRequest",
-    "queue_response": "OrderService",
-    "order_id": 'b76d019f-5937-4a14-8091-1d9f18666c93',
-    "customer_id": 'f2861560-e9ed-4463-955f-0c55c3b416fb',
-
-}
-
-metadata_documentation = {
-    "receiver": {'example': 'OrderService',
-                 'description': 'Requesting service.'},
-    "order_id": {'example': 'b76d019f-5937-4a14-8091-1d9f18666c93',
-                 'description': 'Order ID of the Order currently being handled.'},
-    "customer_id": {'example': 'f2861560-e9ed-4463-955f-0c55c3b416fb',
-                    'description': 'Customer ID for the Order currently being handled.'},
-}
-
+tags_metadata = [
+    {
+        "name": "Orders",
+        "description": f"The ***{config.service_name}*** handle Orders for the Fictitious Company.",
+    }
+]
 
 license_info = {
     "name": "License: Apache 2.0",
