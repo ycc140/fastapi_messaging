@@ -1,11 +1,11 @@
 # fastapi_messaging
+<img width="55%" src="design_docs/order_container_diagram.png"/>
+
 Elaborate Microservice async example with FastAPI, RabbitMQ, MongoDB and Redis.
 
 ## Author: Anders Wiklund
 
 This repository is the basis for a series of **Medium** articles.
-
-<img width="55%" align="right" src="design_docs/order_container_diagram.png"/>
 
 ### Here's a brief outline of the article parts
 
