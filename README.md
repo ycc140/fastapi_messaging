@@ -5,6 +5,8 @@ Elaborate Microservice async example with FastAPI, RabbitMQ, MongoDB and Redis.
 
 This repository is the basis for a series of **Medium** articles.
 
+<img width="55%" align="right" src="design_docs/order_container_diagram.png"/>
+
 ### Here's a brief outline of the article parts
 
 #### [Part 1: Introduction and installation of required components](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part1-4e5516cc8d4d)
