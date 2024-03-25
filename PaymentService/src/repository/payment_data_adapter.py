@@ -4,76 +4,74 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-23 19:52:08
-     $Rev: 36
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
-# Third party modules
-from pydantic import UUID4
+# BUILTIN modules
+from uuid import UUID
 
 # Local modules
-from .db import Engine
-from .models import (PaymentModel, PaymentUpdateModel)
+from .models import PaymentModel
+from .interface import IRepository
+from .mongo_repository import MongoRepository
 
 
 # ------------------------------------------------------------------------
 #
-class PaymentsRepository:
+class PaymentRepository:
     """
-    This class implements the PaymentService data layer adapter (the CRUD operations).
+    This class defines the PaymentService data layer adapter (the CRUD operations).
+
+    It is implemented using the Repository pattern and is using the Dependency
+    Inversion Principle.
+
+    :ivar repository: Current repository instance
+    :type repository: `IRepository`
     """
 
     # ---------------------------------------------------------
     #
-    @staticmethod
-    async def connection_info() -> dict:
-        """ Return DB connection information.
+    def __init__(self, repository: IRepository):
+        """ The class constructor.
 
-        :return: DB connection information.
+        :param repository: Repository instance to use.
         """
-        return await Engine.connection.server_info()
+        self.repository = repository
 
     # ---------------------------------------------------------
     #
-    @staticmethod
-    async def create(payload: PaymentModel) -> bool:
+    async def create(self, payload: PaymentModel) -> bool:
         """ Create Payment in DB collection api_db.payments.
 
         :param payload: New Payment payload.
-        :return: DB create result.
+        :return: DB create response.
         """
-        response = await Engine.db.payments.insert_one(payload.to_mongo())
-
-        return response.acknowledged
+        return await self.repository.create(payload)
 
     # ---------------------------------------------------------
     #
-    @staticmethod
-    async def read(key: UUID4) -> PaymentModel:
+    async def read(self, key: UUID) -> PaymentModel:
         """ Read Payment for matching index key from DB collection api_db.payments.
 
         :param key: Index key.
         :return: Found Payment.
         """
-
-        response = await Engine.db.payments.find_one({"_id": str(key)})
-
-        return PaymentModel.from_mongo(response)
+        return await self.repository.read(key)
 
     # ---------------------------------------------------------
     #
-    @staticmethod
-    async def update(payload: PaymentModel) -> bool:
-        """ Update Payment in DB collection api_db.payments.
+    async def update(self, payload: PaymentModel) -> bool:
+        """ Update Payment in a DB collection api_db.payments.
 
-        :param payload: Updated Order payload.
+        :param payload: Updated Payment payload.
         :return: DB update result.
         """
+        return await self.repository.update(payload)
 
-        base = PaymentUpdateModel(**payload.dict()).to_mongo()
-        response = await Engine.db.payments.update_one({"_id": str(payload.id)},
-                                                       {"$set": {**base}})
 
-        return response.raw_result['updatedExisting']
+payments_repository = PaymentRepository(MongoRepository())
+""" Repository injected with MongoDB implementation. """

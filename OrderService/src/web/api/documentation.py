@@ -4,10 +4,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-04-02 14:01:36
-     $Rev: 57
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 from fastapi import Path
@@ -15,18 +16,23 @@ from fastapi import Path
 # Local modules
 from ...config.setup import config
 
-
 order_id_documentation = Path(
     ...,
     description='**Order ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*. '
                 'A unique identifier for an existing Order.',
 )
+""" OpenAPI order ID documentation. """
 
 resource_example = {
     "status": True,
+    "cert_remaining_days": 820,
     "version": f"{config.version}",
     "name": f"{config.service_name}",
     "resources": [
+        {
+            "name": "Certificate.valid",
+            "status": True
+        },
         {
             "name": "MongoDb",
             "status": True
@@ -53,6 +59,7 @@ resource_example = {
         },
     ]
 }
+""" OpenAPI health response documentation. """
 
 tags_metadata = [
     {
@@ -60,15 +67,17 @@ tags_metadata = [
         "description": f"The ***{config.service_name}*** handle Orders for the Fictitious Company.",
     }
 ]
+""" OpenAPI Orders endpoint documentation. """
 
 license_info = {
     "name": "License: Apache 2.0",
     "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
 }
+""" OpenAPI license documentation. """
 
 servers = [
     {
-        "url": "http://127.0.0.1:8000",
+        "url": "https://127.0.0.1:8000",
         "description": "URL for local development and testing"
     },
     {
@@ -80,6 +89,7 @@ servers = [
         "description": "main production server"
     },
 ]
+""" OpenAPI API platform servers. """
 
 description = """
 <img width="65%" align="right" src="/static/order_container_diagram.png"/>
@@ -96,7 +106,7 @@ needs of the service.
 
 The key to this design is that a metadata structure is part of every message that is sent between the services in 
 the system. This `MetaDataSchema` structure is described in the Schemas section for the 
-[PaymentService](http://127.0.0.1:8001/docs). 
+[PaymentService](https://127.0.0.1:8001/docs). 
 
 <br>**The following HTTP status codes are returned:**
   * `200:` Successful GET response.
@@ -110,3 +120,4 @@ the system. This `MetaDataSchema` structure is described in the Schemas section 
 <br><br>
 ---
 """
+""" OpenAPI main Order documentation. """

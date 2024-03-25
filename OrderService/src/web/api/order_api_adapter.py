@@ -4,36 +4,39 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-30 13:14:04
-     $Rev: 48
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 # BUILTIN modules
+from uuid import UUID
 from typing import List
 
 # Third party modules
-from pydantic import UUID4
 from fastapi import HTTPException
 
 # Local modules
 from ...repository.models import OrderModel
-from .schemas import OrderResponse, OrderPayload
+from ...repository.interface import IRepository
+from .models import OrderResponse, OrderPayload
 from ...business.request_handler import OrderApiLogic
-from ...repository.order_data_adapter import OrdersRepository
 
 
 # ------------------------------------------------------------------------
 #
 class OrdersApi:
-    """
-    This class implements the web API layer adapter.
+    """ This class implements the web API layer adapter.
+
+    :ivar repo: Current repository instance
+    :type repo: `IRepository`
     """
 
     # ---------------------------------------------------------
     #
-    def __init__(self, repository: OrdersRepository):
+    def __init__(self, repository: IRepository):
         """ The class initializer.
 
         :param repository: Data layer handler object.
@@ -42,12 +45,12 @@ class OrdersApi:
 
     # ---------------------------------------------------------
     #
-    async def _order_of(self, order_id: UUID4) -> OrderModel:
+    async def _order_of(self, order_id: UUID) -> OrderModel:
         """ Return specified order.
 
         :param order_id: Order id for order to find.
-        :return: Found Order object.
-        :raise HTTPException [404]: when Order not found in DB api_db.orders.
+        :return: The found Order object.
+        :raise HTTPException [404]: When Order not found in DB api_db.orders.
         """
         db_order = await self.repo.read(order_id)
 
@@ -70,15 +73,15 @@ class OrdersApi:
 
     # ---------------------------------------------------------
     #
-    async def get_order(self, order_id: UUID4) -> OrderResponse:
+    async def get_order(self, order_id: UUID) -> OrderResponse:
         """ Return specified order.
 
         :param order_id: Order id for order to find.
-        :return: Found Order object.
-        :raise HTTPException [404]: when Order not found in DB api_db.orders.
+        :return: The found Order object.
+        :raise HTTPException [404]: When Order not found in DB api_db.orders.
         """
         db_order = await self._order_of(order_id)
-        return OrderResponse(**db_order.dict())
+        return OrderResponse(**db_order.model_dump())
 
     # ---------------------------------------------------------
     #
@@ -86,37 +89,37 @@ class OrdersApi:
         """ Create a new order in DB and make a payment request.
 
         :param payload: Incoming Order request.
-        :return: Created Order object.
-        :raise HTTPException [400]: when PaymentService response code != 202.
-        :raise HTTPException [500]: when connection with PaymentService failed.
-        :raise HTTPException [400]: when create order in DB api_db.orders failed.
+        :return: The created Order object.
+        :raise HTTPException [400]: When PaymentService response code != 202.
+        :raise HTTPException [500]: When connection with PaymentService failed.
+        :raise HTTPException [400]: When create order in DB api_db.orders failed.
         """
-        db_order = OrderModel(**payload.dict())
-        order = OrderApiLogic(repository=self.repo, **db_order.dict())
+        db_order = OrderModel(**payload.model_dump())
+        order = OrderApiLogic(repository=self.repo, **db_order.model_dump())
         return await order.create()
 
     # ---------------------------------------------------------
     #
-    async def cancel_order(self, order_id: UUID4) -> OrderResponse:
-        """ Cancel specified order.
+    async def cancel_order(self, order_id: UUID) -> OrderResponse:
+        """ Cancel a specified order.
 
-        :param order_id: id for order to cancel.
-        :return: Found Order object.
-        :raise HTTPException [400]: when failed to update DB api_db.orders.
-        :raise HTTPException [404]: when Order not found in DB api_db.orders.
+        :param order_id: ID for order to cancel.
+        :return: The found Order object.
+        :raise HTTPException [400]: When failed to update DB api_db.orders.
+        :raise HTTPException [404]: When Order not found in DB api_db.orders.
         """
         db_order = await self._order_of(order_id)
-        order = OrderApiLogic(repository=self.repo, **db_order.dict())
+        order = OrderApiLogic(repository=self.repo, **db_order.model_dump())
         return await order.cancel()
 
     # ---------------------------------------------------------
     #
-    async def delete_order(self, order_id: UUID4) -> None:
+    async def delete_order(self, order_id: UUID) -> None:
         """ Delete specified order.
 
-        :param order_id: id for order to delete.
-        :raise HTTPException [404]: when Order not found in DB api_db.orders.
+        :param order_id: ID for the order to delete.
+        :raise HTTPException [404]: When Order not found in DB api_db.orders.
         """
         db_order = await self._order_of(order_id)
-        order = OrderApiLogic(repository=self.repo, **db_order.dict())
+        order = OrderApiLogic(repository=self.repo, **db_order.model_dump())
         await order.delete()

@@ -4,10 +4,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-04-01 17:51:19
-     $Rev: 55
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 # BUILTIN modules
@@ -19,9 +20,9 @@ from httpx import AsyncClient, ConnectTimeout
 
 # Local modules
 from ..config.setup import config
-from ..repository.url_cache import UrlCache
-from .schemas import KitchenPayload, DeliveryPayload
-from ..repository.order_data_adapter import OrdersRepository
+from ..repository.interface import IRepository
+from ..repository.url_cache import UrlServiceCache
+from .models import KitchenPayload, DeliveryPayload
 from ..repository.models import Status, OrderModel, StateUpdateSchema
 
 
@@ -31,14 +32,20 @@ class OrderResponseLogic:
     """
     This class implements the OrderService business logic layer
     for RabbitMQ response messages.
+
+    :ivar repo: DB repository.
+    :type repo: `IRepository`
+    :ivar cache: Redis client.
+    :type cache: `UrlServiceCache`
     """
 
     # ---------------------------------------------------------
     #
-    def __init__(self, cache: UrlCache, repository: OrdersRepository):
+    def __init__(self, repository: IRepository, cache: UrlServiceCache):
         """ The class initializer.
 
         :param repository: Data layer handler object.
+        :param cache: Redis client.
         """
         self.cache = cache
         self.repo = repository
@@ -62,7 +69,7 @@ class OrderResponseLogic:
     # ---------------------------------------------------------
     #
     async def _handle_successful_payment(self, message: dict, order: OrderModel):
-        """ Payment was successful so get Customer Address and request DeliveryService work.
+        """ Payment was successful, so get Customer Address and request DeliveryService work.
 
         :param message: PaymentService response message.
         :param order: Current Order.
@@ -82,7 +89,7 @@ class OrderResponseLogic:
                 raise RuntimeError(errmsg)
 
             payload = DeliveryPayload(metadata=message['metadata'],
-                                      address=resp.json(), **order.dict())
+                                      address=resp.json(), **order.model_dump())
 
             root = await self.cache.get('DeliveryService')
 
@@ -90,7 +97,7 @@ class OrderResponseLogic:
             async with AsyncClient() as client:
                 service = 'DeliveryService'
                 url = f"{root}/v1/deliveries"
-                resp = await client.post(url=url, json=payload.dict(),
+                resp = await client.post(url=url, json=payload.model_dump(),
                                          timeout=config.url_timeout)
 
             if resp.status_code != 202:
@@ -108,6 +115,9 @@ class OrderResponseLogic:
             errmsg = f'No connection with {service} on URL {url}'
             raise ConnectionError(errmsg)
 
+        finally:
+            await self.cache.close()
+
     # ---------------------------------------------------------
     #
     async def _handle_delivery_ready(self, message: dict, order: OrderModel):
@@ -116,7 +126,7 @@ class OrderResponseLogic:
         :param message: DeliveryService metadata response message.
         :param order: Current Order.
         """
-        payload = KitchenPayload(metadata=message['metadata'], **order.dict())
+        payload = KitchenPayload(metadata=message['metadata'], **order.model_dump())
 
         try:
             root = await self.cache.get('KitchenService')
@@ -124,7 +134,7 @@ class OrderResponseLogic:
             # Request KitchenService work.
             async with AsyncClient() as client:
                 url = f"{root}/v1/kitchen"
-                resp = await client.post(url=url, json=payload.dict(),
+                resp = await client.post(url=url, json=payload.model_dump(),
                                          timeout=config.url_timeout)
 
             if resp.status_code != 202:
@@ -141,6 +151,9 @@ class OrderResponseLogic:
         except ConnectTimeout:
             errmsg = f'No connection with KitchenService on URL {url}'
             raise ConnectionError(errmsg)
+
+        finally:
+            await self.cache.close()
 
     # ---------------------------------------------------------
     #

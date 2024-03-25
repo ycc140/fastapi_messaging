@@ -4,10 +4,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-21 02:16:53
-     $Rev: 26
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 # Third party modules
@@ -22,11 +23,10 @@ from ..config.setup import config
 class Engine:
     """ MongoDb database async engine class.
 
-
-    :type db: C{motor.motor_asyncio.AsyncIOMotorDatabase}
     :ivar db: AsyncIOMotorDatabase class instance.
-    :type connection: C{motor.motor_asyncio.AsyncIOMotorClient}
+    :type db: AsyncIOMotorDatabase
     :ivar connection: AsyncIOMotorClient class instance.
+    :type connection: AsyncIOMotorClient
     """
 
     db: AsyncIOMotorDatabase = None
@@ -35,12 +35,11 @@ class Engine:
     # ---------------------------------------------------------
     #
     @classmethod
-    async def connect_to_mongo(cls):
-        """ Initialize DB connection to MongoDb and database.
+    async def create_db_connection(cls):
+        """ Initialize connection to MongoDb and default database.
 
         Setting server connection timeout to 5 (default is 30) seconds.
         """
-
         cls.connection = AsyncIOMotorClient(config.mongo_url,
                                             uuidRepresentation='standard',
                                             serverSelectionTimeoutMS=5000)
@@ -49,7 +48,14 @@ class Engine:
     # ---------------------------------------------------------
     #
     @classmethod
-    async def close_mongo_connection(cls):
+    async def close_db_connection(cls):
         """ Close DB connection. """
+        if cls.connection:
+            cls.connection.close()
 
-        cls.connection.close()
+    # ---------------------------------------------------------
+    #
+    @classmethod
+    async def is_db_connected(cls) -> bool:
+        """ Return DB connection status. """
+        return bool(cls.connection.server_info())

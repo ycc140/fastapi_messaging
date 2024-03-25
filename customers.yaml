@@ -19,18 +19,18 @@ paths:
       description: '***Request Credit Card details and amount to pay for specified Customer.***'
       summary: Get Customer Billing Info
       tags:
-      - Customers
+        - Customers
       parameters:
-      - description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
-          A unique identifier for an existing Order.'
-        in: path
-        name: customer_id
-        required: true
-        schema:
-          description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
-            A unique identifier for an existing Customer.'
-          format: uuid4
-          type: string
+        - description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+            A unique identifier for an existing Order.'
+          in: path
+          name: customer_id
+          required: true
+          schema:
+            description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+              A unique identifier for an existing Customer.'
+            format: uuid4
+            type: string
       requestBody:
         required: true
         content:
@@ -65,18 +65,18 @@ paths:
       description: '***Request address for specified Customer.***'
       summary: Get Customer Address Info
       tags:
-      - Customers
+        - Customers
       parameters:
-      - description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
-          A unique identifier for an existing Order.'
-        in: path
-        name: customer_id
-        required: true
-        schema:
-          description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
-            A unique identifier for an existing Customer.'
-          format: uuid4
-          type: string
+        - description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+            A unique identifier for an existing Order.'
+          in: path
+          name: customer_id
+          required: true
+          schema:
+            description: '**Customer ID**: *Example `dbb86c27-2eed-410d-881e-ad47487dd228`*.
+              A unique identifier for an existing Customer.'
+            format: uuid4
+            type: string
       responses:
         '200':
           content:
@@ -102,7 +102,7 @@ paths:
       description: '***Health check endpoint..***'
       summary: Health Check
       tags:
-      - Health
+        - Health
       responses:
         '200':
           description: Successful Response
@@ -142,8 +142,8 @@ components:
         loc:
           items:
             anyOf:
-            - type: string
-            - type: integer
+              - type: string
+              - type: integer
           title: Location
           type: array
         msg:
@@ -153,9 +153,9 @@ components:
           title: Error Type
           type: string
       required:
-      - loc
-      - msg
-      - type
+        - loc
+        - msg
+        - type
       title: ValidationError
       type: object
 
@@ -183,15 +183,15 @@ components:
         MoneyRange: $804
         Name: Barirah Chou
       required:
-      - CVV
-      - Bank
-      - Name
-      - Expiry
-      - Address
-      - Country
-      - MoneyRange
-      - CardNumber
-      - IssuingNetwork
+        - CVV
+        - Bank
+        - Name
+        - Expiry
+        - Address
+        - Country
+        - MoneyRange
+        - CardNumber
+        - IssuingNetwork
       properties:
         Address:
           title: Address
@@ -262,10 +262,10 @@ components:
       description: 'Representation of valid products in the system. '
       type: string
       enum:
-      - Lasagna
-      - Double Cheeseburger
-      - Veil with glazed onions and blue cheese
-      - Vegetarian Salad with healthy produce
+        - Lasagna
+        - Double Cheeseburger
+        - Veil with glazed onions and blue cheese
+        - Vegetarian Salad with healthy produce
 
     OrderItem:
       type: object

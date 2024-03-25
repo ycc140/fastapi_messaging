@@ -4,10 +4,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-25 17:47:36
-     $Rev: 42
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 # BUILTIN modules
@@ -19,6 +20,9 @@ from types import FrameType
 # Third party modules
 from loguru import logger
 
+# Local modules
+from ..config.setup import config
+
 
 # ---------------------------------------------------------
 #
@@ -26,6 +30,10 @@ class InterceptHandler(logging.Handler):
     """ Logs to loguru from Python logging module. """
 
     def emit(self, record: logging.LogRecord):
+        """ Emit log record.
+
+        :param record: Current logging record.
+        """
         try:
             level = logger.level(record.levelname).name
 
@@ -48,13 +56,13 @@ class InterceptHandler(logging.Handler):
 
 # ---------------------------------------------------------
 #
-def create_unified_logger(log_level: str) -> tuple:
+def create_unified_logger() -> logger:
     """ Return unified Loguru logger object.
 
     :return: unified Loguru logger object.
     """
 
-    level = log_level
+    level = config.service_log_level
 
     # Remove all existing loggers.
     logger.remove()
@@ -62,6 +70,8 @@ def create_unified_logger(log_level: str) -> tuple:
     # Create a basic Loguru logging config.
     logger.add(
         diagnose=True,
+        enqueue=False,
+        colorize=True,
         backtrace=True,
         sink=sys.stderr,
         level=level.upper(),
@@ -74,9 +84,9 @@ def create_unified_logger(log_level: str) -> tuple:
     for logger_name in logging.root.manager.loggerDict.keys():
 
         if logger_name not in seen:
-            seen.add(logger_name.split(".")[0])
+            seen.add(logger_name)
             mod_logger = logging.getLogger(logger_name)
-            mod_logger.handlers = [InterceptHandler(level=level.upper())]
+            mod_logger.handlers = [InterceptHandler()]
             mod_logger.propagate = False
 
-    return level, logger.bind(request_id=None, method=None)
+    return logger.bind(request_id=None, method=None)

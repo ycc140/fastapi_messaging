@@ -4,22 +4,26 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-31 18:44:42
-     $Rev: 51
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
-
 
 # Local modules
 from ...config.setup import config
 
-
 resource_example = {
     "status": True,
+    "cert_remaining_days": 820,
     "version": f"{config.version}",
     "name": f"{config.service_name}",
     "resources": [
+        {
+            "name": "Certificate.valid",
+            "status": True
+        },
         {
             "name": "MongoDb",
             "status": True
@@ -30,24 +34,27 @@ resource_example = {
         },
     ]
 }
+""" OpenAPI health response documentation. """
 
 billing_example = {
-        "IssuingNetwork": "MASTERCARD",
-        "CardNumber": "5485848512008744",
-        "Bank": "NORDEA BANK AB",
-        "Name": "Barirah Chou",
-        "Address": "Stallstigen 30",
-        "Country": "SWEDEN",
-        "MoneyRange": "$804",
-        "CVV": "808",
-        "Expiry": "07/2030",
+    "IssuingNetwork": "MASTERCARD",
+    "CardNumber": "5485848512008744",
+    "Bank": "NORDEA BANK AB",
+    "Name": "Barirah Chou",
+    "Address": "Stallstigen 30",
+    "Country": "SWEDEN",
+    "MoneyRange": "$804",
+    "CVV": "808",
+    "Expiry": "07/2030",
 }
+""" OpenAPI CreditCardSchema example documentation. """
 
 metadata_example = {
     "receiver": "OrderService",
     "order_id": 'b76d019f-5937-4a14-8091-1d9f18666c93',
     "customer_id": 'f2861560-e9ed-4463-955f-0c55c3b416fb',
 }
+""" OpenAPI MetadataSchema example documentation. """
 
 metadata_documentation = {
     "receiver": {'example': 'OrderService',
@@ -57,6 +64,7 @@ metadata_documentation = {
     "customer_id": {'example': 'f2861560-e9ed-4463-955f-0c55c3b416fb',
                     'description': 'Customer ID for the Order currently being handled.'},
 }
+""" OpenAPI MetadataSchema parameters documentation. """
 
 callback_documentation = {
     "status": {'example': 'paymentPaid',
@@ -66,6 +74,7 @@ callback_documentation = {
     "transaction_id": {'example': 'f2861560-e9ed-4463-955f-0c55c3b416fb',
                        'description': 'Credit Card company transaction ID.'},
 }
+""" OpenAPI BillingCallback parameters documentation. """
 
 tags_metadata = [
     {
@@ -74,15 +83,17 @@ tags_metadata = [
                        f"following Credit Cards: `VISA`, `Mastercard`, `Eurocard`.",
     }
 ]
+""" OpenAPI Payments endpoint documentation. """
 
 license_info = {
     "name": "License: Apache 2.0",
     "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
 }
+""" OpenAPI license documentation. """
 
 servers = [
     {
-        "url": "http://127.0.0.1:8001",
+        "url": "https://127.0.0.1:8001",
         "description": "URL for local development and testing"
     },
     {
@@ -94,6 +105,7 @@ servers = [
         "description": "main production server"
     },
 ]
+""" OpenAPI API platform servers. """
 
 description = """
 <img width="65%" align="right" src="/static/order_container_diagram.png"/>
@@ -114,3 +126,4 @@ This service handles Customer Credit Card payments using external Credit Card Co
 <br><br>
 ---
 """
+""" OpenAPI main Payments documentation. """

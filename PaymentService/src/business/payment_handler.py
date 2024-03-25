@@ -4,43 +4,54 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-04-01 17:51:19
-     $Rev: 55
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
-
 
 # BUILTIN modules
 import contextlib
-from uuid import UUID, uuid4
+from uuid import UUID
 
 # Third party modules
 from loguru import logger
+from uuid_extensions import uuid7
 from fastapi import HTTPException
 from httpx import AsyncClient, ConnectError, ConnectTimeout
 
 # Local modules
-from ..config.setup import config
-from .schemas import PaymentResponse
-from ..repository.url_cache import UrlCache
+from .models import PaymentResponse
 from ..repository.models import PaymentModel
+from ..config.setup import config, SSL_CONTEXT
 from ..tools.rabbit_client import RabbitClient
-from ..repository.payment_data_adapter import PaymentsRepository
-from ..web.api.schemas import BillingCallback, BillingPayload, PaymentPayload
+from ..repository.interface import IRepository
+from ..repository.url_cache import UrlServiceCache
+from ..web.api.models import BillingCallback, BillingPayload, PaymentPayload
+
+# Constants
+PAYMENTS_CALLBACK_URL = "http://fictitious.com/v1/payments/callback"
+""" Payment callback URL. """
 
 
 # -----------------------------------------------------------------------------
 #
 class PaymentLogic:
-    """
-    This class implements the PaymentService business logic layer.
+    """ This class implements the PaymentService business logic layer.
+
+    :ivar repo: DB repository.
+    :type repo: `IRepository`
+    :ivar cache: Redis client.
+    :type cache: `UrlServiceCache`
+    :ivar rabbit_client: RabbitMQ client.
+    :type rabbit_client: `RabbitClient`
     """
 
     # ---------------------------------------------------------
     #
-    def __init__(self, repository: PaymentsRepository,
-                 cache: UrlCache, client: RabbitClient):
+    def __init__(self, repository: IRepository,
+                 cache: UrlServiceCache, client: RabbitClient):
         """ The class initializer.
 
         :param repository: Data layer handler object.
@@ -48,8 +59,8 @@ class PaymentLogic:
         :param client: RabbitMQ client.
         """
         self.cache = cache
-        self.client = client
         self.repo = repository
+        self.rabbit_client = client
 
     # ---------------------------------------------------------
     #
@@ -59,26 +70,26 @@ class PaymentLogic:
 
         :param payload: Data needed for Billing.
         :return: Credit Card Company transaction ID.
-        :raise RuntimeError: when Post response status != 202.
+        :raise RuntimeError: When Post response status != 202.
         """
 
         # Fake the billing work (URL is fake, so it will never connect).
         with contextlib.suppress(ConnectError):
             async with AsyncClient() as client:
                 url = "http://fakeCreditCardCompany.com/billings"
-                resp = await client.post(url=url, json=payload.dict(),
+                resp = await client.post(url=url, json=payload.model_dump(),
                                          timeout=config.url_timeout)
 
             if resp.status_code != 202:
-                errmsg = f"Failed sending POST request to Credit Card Company " \
-                             f"URL {url} - [{resp.status_code}: {resp.text}]."
+                errmsg = (f"Failed sending POST request to Credit Card Company "
+                          f"URL {url} - [{resp.status_code}: {resp.text}].")
                 raise RuntimeError(errmsg)
 
         logger.info(f"Sent Billing request with caller_id '{payload.caller_id}'.")
 
         # This should be something like: return resp.json()['tracking_id']
         # but since we fake it, we need an id.
-        return uuid4()
+        return uuid7()
 
     # ---------------------------------------------------------
     #
@@ -87,19 +98,19 @@ class PaymentLogic:
         """ Simulate doing the Credit Card reimbursement.
 
         :param payload: Data needed for reimbursement.
-        :raise RuntimeError: when Post response status != 202.
+        :raise RuntimeError: When Post response status != 202.
         """
 
         # Fake the reimbursement work (URL is fake, so it will never connect).
         with contextlib.suppress(ConnectError):
             async with AsyncClient() as client:
                 url = "http://fakeCreditCardCompany.com/billings/reimburse"
-                resp = await client.post(url=url, json=payload.dict(),
+                resp = await client.post(url=url, json=payload.model_dump(),
                                          timeout=config.url_timeout)
 
             if resp.status_code != 202:
-                errmsg = f"Failed sending POST request to Credit Card Company " \
-                             f"URL {url} - [{resp.status_code}: {resp.text}]."
+                errmsg = (f"Failed sending POST request to Credit Card Company "
+                          f"URL {url} - [{resp.status_code}: {resp.text}].")
                 raise RuntimeError(errmsg)
 
         logger.info(f"Sent reimbursement request with caller_id '{payload.caller_id}'.")
@@ -115,9 +126,9 @@ class PaymentLogic:
            - Store payment in DB collection api_db.payments.
 
         :param payload: Payment request data.
-        :raise HTTPException [500]: when processing request failed.
-        :raise HTTPException [400]: when HTTP POST response != 201 or 202.
-        :raise HTTPException [500]: when connection with CustomerService failed.
+        :raise HTTPException [500]: When processing request failed.
+        :raise HTTPException [400]: When HTTP POST response != 201 or 202.
+        :raise HTTPException [500]: When connection with CustomerService failed.
         """
         url = None
 
@@ -127,7 +138,7 @@ class PaymentLogic:
             items = [item.dict() for item in payload.items]
 
             # Get Customer Credit Card information.
-            async with AsyncClient() as client:
+            async with AsyncClient(verify=SSL_CONTEXT) as client:
                 url = f"{root}/v1/customers/{meta.customer_id}/billing"
                 resp = await client.post(url=url, json=items,
                                          timeout=config.url_timeout)
@@ -138,9 +149,8 @@ class PaymentLogic:
                 raise RuntimeError(errmsg)
 
             # Charge the Customer credit card.
-            url = "http://fictitious.com/v1/payments/callback"
-            billing = BillingPayload(caller_id=meta.order_id,
-                                     callback_url=url, **resp.json())
+            billing = BillingPayload(callback_url=PAYMENTS_CALLBACK_URL,
+                                     caller_id=meta.order_id, **resp.json())
             trans_id = await self._charge_credit_card(billing)
 
             # Store payment in DB.
@@ -162,6 +172,9 @@ class PaymentLogic:
             logger.critical(f'Failed processing payment request => {why}')
             raise HTTPException(status_code=500, detail=f'{why}')
 
+        finally:
+            await self.cache.close()
+
     # ---------------------------------------------------------
     #
     async def process_reimbursement_request(self, payload: PaymentPayload):
@@ -173,9 +186,9 @@ class PaymentLogic:
            - Update payment status in DB collection api_db.payments.
 
         :param payload: Reimbursement request data.
-        :raise HTTPException [500]: when processing request failed.
-        :raise HTTPException [400]: when HTTP POST response != 201 or 202.
-        :raise HTTPException [500]: when connection with CustomerService failed.
+        :raise HTTPException [500]: When processing request failed.
+        :raise HTTPException [400]: When HTTP POST response != 201 or 202.
+        :raise HTTPException [500]: When connection with CustomerService failed.
         """
         url = None
 
@@ -185,7 +198,7 @@ class PaymentLogic:
             items = [item.dict() for item in payload.items]
 
             # Get Customer Credit Card information.
-            async with AsyncClient() as client:
+            async with AsyncClient(verify=SSL_CONTEXT) as client:
                 url = f"{root}/v1/customers/{meta.customer_id}/billing"
                 resp = await client.post(url=url, json=items,
                                          timeout=config.url_timeout)
@@ -196,9 +209,8 @@ class PaymentLogic:
                 raise RuntimeError(errmsg)
 
             # Reimburse the Customer credit card.
-            url = "http://fictitious.com/v1/payments/callback"
             billing = BillingPayload(caller_id=meta.order_id,
-                                     callback_url=url, **resp.json())
+                                     callback_url=PAYMENTS_CALLBACK_URL, **resp.json())
             await self._reimburse_credit_card(billing)
 
         except RuntimeError as why:
@@ -214,6 +226,9 @@ class PaymentLogic:
             logger.critical(f'Failed processing payment request => {why}')
             raise HTTPException(status_code=500, detail=f'{why}')
 
+        finally:
+            await self.cache.close()
+
     # ---------------------------------------------------------
     #
     async def process_response(self, payload: BillingCallback) -> BillingCallback:
@@ -221,12 +236,12 @@ class PaymentLogic:
 
          Implemented logic:
            - Extract payment Order from DB using payload caller_id.
-           - Store updated billing data in DB collection api_db.payments.
+           - Store updated billing data in a DB collection api_db.payments.
            - Send the billing response to the metadata requester using RabbitMQ.
 
         :param payload: Payment callback response data.
         :return: Received payload.
-        :raise HTTPException [404]: when caller_id does not exist in DB.
+        :raise HTTPException [404]: When caller_id does not exist in DB.
         """
         try:
             payment = await self.repo.read(payload.caller_id)
@@ -243,9 +258,10 @@ class PaymentLogic:
             payment.status = payload.status
             await self.repo.update(payment)
 
-            # Send response message to requester.
-            await self.client.send_message(message=response.dict(),
-                                           queue=payment.metadata.receiver)
+            # Send a response message to requester.
+            await self.rabbit_client.start()
+            await self.rabbit_client.publish_message(message=response.model_dump(),
+                                                     queue=payment.metadata.receiver)
 
             logger.info(f"Sent Payment response to {payment.metadata.receiver} "
                         f"with status '{payload.status}' for Order '{payload.caller_id}'.")
@@ -255,3 +271,7 @@ class PaymentLogic:
         except RuntimeError as why:
             logger.error(f'{why}')
             raise HTTPException(status_code=404, detail=f'{why}')
+
+        finally:
+            if self.rabbit_client.is_connected:
+                await self.rabbit_client.stop()

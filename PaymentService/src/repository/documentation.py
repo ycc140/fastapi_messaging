@@ -4,10 +4,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-21 22:20:47
-     $Rev: 27
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 payment_documentation = {
@@ -21,3 +22,4 @@ payment_documentation = {
     "transaction_id": {'example': 'f2861560-e9ed-4463-955f-0c55c3b416fb',
                        'description': 'Transaction ID for the Credit Card company for the current Order.'},
 }
+""" OpenAPI payment documentation. """

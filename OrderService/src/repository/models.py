@@ -4,21 +4,23 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-04-01 17:51:19
-     $Rev: 55
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 # BUILTIN modules
 from enum import Enum
-from uuid import uuid4
-from datetime import datetime
+from uuid import UUID
+from datetime import datetime, UTC
 from typing import Optional, Callable, List
 
 # Third party modules
-from pydantic import (BaseModel, BaseConfig,
-                      Field, UUID4, conlist, conint)
+from uuid_extensions import uuid7
+from pydantic import (BaseModel, ConfigDict,
+                      Field, conlist, PositiveInt)
 
 # Local modules
 from .documentation import (order_documentation as order_doc)
@@ -26,33 +28,65 @@ from .documentation import (order_documentation as order_doc)
 
 # ---------------------------------------------------------
 #
+def utcnow():
+    """ Return the current datetime with a UTC timezone.
+
+    :return: Current UTC datetime.
+    """
+    return datetime.now(UTC)
+
+
+# ---------------------------------------------------------
+#
+# noinspection IncorrectFormatting
 class Status(str, Enum):
     """ Order status changes.
 
     CREA -> PAID/FAIL -> DISC -> DRAV -> SHED -> COOK -> PROD -> PICK -> TRAN -> DONE
 
-    An Order can be cancelled before DRAV status has been reached (finding an available
-    driver sometimes take time, so the Customer is unwilling to wait any longer).
+    An Order can be canceled before DRAV status has been reached (finding an available
+    driver sometimes takes time, so the Customer is unwilling to wait any longer).
+
+
+    :ivar CREA: OrderService state.
+    :ivar ORCA: OrderService state.
+    :ivar PAID: PaymentService state.
+    :ivar REIM: PaymentService state.
+    :ivar FAIL: PaymentService state.
+    :ivar DESC: DeliveryService state.
+    :ivar DRAV: DeliveryService state.
+    :ivar SHED: KitchenService state.
+    :ivar COOK: KitchenService state.
+    :ivar PROD: KitchenService state.
+    :ivar PICK: KitchenService state.
+    :ivar TRAN: DeliveryService state.
+    :ivar DONE: DeliveryService state.
     """
-    CREA = 'created'            # OrderService
-    ORCA = 'orderCancelled'     # OrderService
-    PAID = 'paymentPaid'        # PaymentService
-    REIM = 'reimbursed'         # PaymentService
-    FAIL = 'paymentFailed'      # PaymentService
-    DESC = 'deliveryScheduled'  # DeliveryService
-    DRAV = 'driverAvailable'    # DeliveryService
-    SHED = 'cookingScheduled'   # KitchenService
-    COOK = 'cookingMeal'        # KitchenService
-    PROD = 'cookingDone'        # KitchenService
-    PICK = 'pickedUp'           # KitchenService
-    TRAN = 'inTransit'          # DeliveryService
-    DONE = 'delivered'          # DeliveryService
+    CREA = 'created'
+    ORCA = 'orderCancelled'
+    PAID = 'paymentPaid'
+    REIM = 'reimbursed'
+    FAIL = 'paymentFailed'
+    DESC = 'deliveryScheduled'
+    DRAV = 'driverAvailable'
+    SHED = 'cookingScheduled'
+    COOK = 'cookingMeal'
+    PROD = 'cookingDone'
+    PICK = 'pickedUp'
+    TRAN = 'inTransit'
+    DONE = 'delivered'
 
 
 # ---------------------------------------------------------
 #
 class Products(str, Enum):
-    """ Representation of valid products in the system. """
+    """ Representation of valid products in the system.
+
+    :ivar lasagna: Food product.
+    :ivar cheese_burger: Food product.
+    :ivar veil: Food product.
+    :ivar vego_salad: Food product.
+    """
     lasagna = 'Lasagna'
     cheese_burger = 'Double Cheeseburger'
     veil = 'Veil with glazed onions and blue cheese'
@@ -60,14 +94,23 @@ class Products(str, Enum):
 
 
 class OrderItem(BaseModel):
-    """ Required order item parameters. """
+    """ Required order item parameters.
+
+
+    :ivar product: Ordered product.
+    :ivar quantity: Product quantity.
+    """
     product: Products
-    quantity: Optional[conint(ge=1, strict=True)] = 1
+    quantity: PositiveInt = 1
 
 
 class OrderItems(BaseModel):
-    """ A list of the ordered items. """
-    items: conlist(OrderItem, min_items=1)
+    """ A list of the ordered items.
+
+
+    :ivar items: List of ordered items.
+    """
+    items: conlist(OrderItem, min_length=1)
 
 
 # ------------------------------------------------------------------------
@@ -77,19 +120,19 @@ class MongoBase(BaseModel):
     Class that handles conversions between MongoDB '_id' key
     and our own 'id' key.
 
-    MongoDB uses `_id` as an internal default index key.
+    MongoDB uses ``_id`` as an internal default index key.
     We can use that to our advantage.
+
+    :ivar model_config: MongoBase config items.
     """
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-    class Config(BaseConfig):
-        """ basic config. """
-        orm_mode = True
-        allow_population_by_field_name = True
-
-    # noinspection PyArgumentList
     @classmethod
     def from_mongo(cls, data: dict) -> Callable:
-        """ Convert "_id" (str object) into "id" (UUID object). """
+        """ Convert "_id" (str object) into "id" (UUID object).
+
+        :param data: Current BaseModel object.
+        """
 
         if not data:
             return data
@@ -97,9 +140,12 @@ class MongoBase(BaseModel):
         mongo_id = data.pop('_id', None)
         return cls(**dict(data, id=mongo_id))
 
-    def to_mongo(self, **kwargs) -> dict:
-        """ Convert "id" (UUID object) into "_id" (str object). """
-        parsed = self.dict(**kwargs)
+    def to_mongo(self, **kwargs: dict) -> dict:
+        """ Convert "id" (UUID object) into "_id" (str object).
+
+        :param kwargs: Current BaseModel object parameters.
+        """
+        parsed = self.model_dump(**kwargs)
 
         if '_id' not in parsed and 'id' in parsed:
             parsed['_id'] = str(parsed.pop('id'))
@@ -110,25 +156,41 @@ class MongoBase(BaseModel):
 # ---------------------------------------------------------
 #
 class StateUpdateSchema(BaseModel):
-    """ Representation of an Order status history in the system. """
+    """ Representation of an Order status history in the system.
+
+    :ivar status: Current order status.
+    :ivar when: Datetime for updated item(s).
+    """
     status: Status = Field(**order_doc['status'])
-    when: datetime = Field(default_factory=datetime.utcnow, **order_doc['when'])
+    when: datetime = Field(default_factory=utcnow, **order_doc['when'])
 
 
 class OrderUpdateModel(MongoBase):
-    """ Representation of an Order in the system. """
-    items: conlist(OrderItem, min_items=1)
-    customer_id: UUID4 = Field(**order_doc['customer_id'])
-    kitchen_id: Optional[UUID4] = Field(**order_doc['kitchen_id'])
-    delivery_id: Optional[UUID4] = Field(**order_doc['delivery_id'])
+    """ Representation of an Order in the system.
+
+    :ivar items: List of ordered items.
+    :ivar customer_id: Customer identity.
+    :ivar kitchen_id: Kitchen identity.
+    :ivar delivery_id: Delivery identity.
+    :ivar status: Current order status.
+    :ivar updated: Datetime for updated order.
+    :ivar created: Datetime for created order.
+    """
+    items: conlist(OrderItem, min_length=1)
+    customer_id: UUID = Field(**order_doc['customer_id'])
+    kitchen_id: Optional[UUID] = Field(**order_doc['kitchen_id'])
+    delivery_id: Optional[UUID] = Field(**order_doc['delivery_id'])
     status: Status = Field(default=Status.CREA, **order_doc['status'])
     updated: Optional[List[StateUpdateSchema]] = Field(**order_doc['updated'])
-    created: datetime = Field(default_factory=datetime.utcnow, **order_doc['created'])
+    created: datetime = Field(default_factory=utcnow, **order_doc['created'])
 
 
 class OrderModel(OrderUpdateModel):
-    """ Representation of an Order in the system. """
-    id: UUID4 = Field(default_factory=uuid4)
+    """ Representation of an Order in the system.
+
+    :ivar id: Order identity.
+    """
+    id: UUID = Field(default_factory=uuid7)
 
 
 # ---------------------------------------------------------
@@ -156,4 +218,4 @@ def dict_of(payload: OrderModel) -> dict:
             else str(value) if value else None)
 
         # Iterate over all elements in the payload.
-        for key, value in payload.dict().items()}
+        for key, value in payload.model_dump().items()}

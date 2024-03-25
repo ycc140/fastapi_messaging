@@ -4,56 +4,86 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-29 19:37:08
-     $Rev: 45
+    $Date: 2024-03-25 00:13:58
+     $Rev: 73
 """
 
 # BUILTIN modules
+import json
 from pathlib import Path
 from contextlib import asynccontextmanager
 
 # Third party modules
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 # Local modules
-from .api import api
 from ..config.setup import config
+from .api import api, health_route
 from ..repository.db import Engine
-from .health_manager import HealthManager
-from ..repository.url_cache import UrlCache
-from .api.schemas import HealthSchema, HealthStatusError
+from ..tools.rabbit_client import RabbitClient
 from ..tools.custom_logging import create_unified_logger
 from .api.documentation import (servers, license_info,
                                 tags_metadata, description)
-from ..repository.payment_data_adapter import PaymentsRepository
 
 
 # ---------------------------------------------------------
 #
 class Service(FastAPI):
+    """ This class extends the FastAPI class for the PaymentService API.
 
-    def __init__(self, *args, **kwargs):
+    The following functionality is added:
+      - unified logging.
+      - includes API router.
+      - Instantiates a RabbitMQ client.
+      - Defines a static path for images in the documentation.
+
+    :ivar rabbit_client: RabbitMQ client.
+    :type rabbit_client: `RabbitClient`
+    :ivar logger: Unified loguru logger object.
+    :type logger: loguru.logger
+    """
+
+    def __init__(self, *args: int, **kwargs: dict):
         """ This class adds RabbitMQ message consumption and unified logging.
 
-        :param args: named arguments.
-        :param kwargs: key-value pair arguments.
+        :param args: Named arguments.
+        :param kwargs: Key-value pair arguments.
         """
         super().__init__(*args, **kwargs)
 
-        self.level, self.logger = create_unified_logger(config.service_log_level)
+        # Needed for OpenAPI Markdown images to be displayed.
+        static_path = Path(__file__).parent.parent.parent.parent / 'design_docs'
+        self.mount("/static", StaticFiles(directory=static_path))
+
+        self.rabbit_client = RabbitClient(config.rabbit_url)
+
+        self.include_router(api.ROUTER)
+        self.include_router(health_route.ROUTER)
+
+        self.logger = create_unified_logger()
 
 
 # ---------------------------------------------------------
 #
 @asynccontextmanager
 async def lifespan(service: Service):
-    await startup(service)
-    yield
-    await shutdown(service)
+    """ Define startup and shutdown application logic.
+
+    :param service: FastAPI service.
+    """
+    try:
+        await startup(service)
+        yield
+
+    except BaseException as why:
+        service.logger.critical(f'RabbitMQ server is unreachable: {why.args[1]}.')
+
+    finally:
+        await shutdown(service)
 
 
 # ---------------------------------------------------------
@@ -67,44 +97,41 @@ app = Service(
     license_info=license_info,
     openapi_tags=tags_metadata,
 )
-app.include_router(api.router)
+""" The FastAPI application instance. """
 
-# Needed for OpenAPI Markdown images to be displayed.
-static_path = Path(__file__).parent.parent.parent.parent / 'design_docs'
-app.mount("/static", StaticFiles(directory=static_path))
+# So you can se test the handling of different log levels.
+app.logger.info(f'{config.name} v{config.version} is initializing...')
 
-
-# ---------------------------------------------------------
-#
-@app.get(
-    '/health',
-    response_model=HealthSchema,
-    tags=["health check endpoint"],
-    responses={500: {"model": HealthStatusError}},
-)
-async def health_check() -> HealthSchema:
-    """ **Health check endpoint.** """
-
-    content = await HealthManager(UrlCache(config.redis_url),
-                                  PaymentsRepository()).get_status()
-    response_code = (200 if content.status else 500)
-
-    return JSONResponse(status_code=response_code, content=content.dict())
+# Log config values for testing purposes.
+app.logger.trace(f'config: {json.dumps(config.model_dump(), indent=2)}')
 
 
 # ---------------------------------------------------------
 #
 async def startup(service: Service):
-    """ Initialize MongoDB connection. """
+    """ Initialize MongoDB connection.
+
+    :param service: FastAPI service instance.
+    """
+
+    service.logger.info('Establishing RabbitMQ connection..')
+    await service.rabbit_client.start()
 
     service.logger.info('Establishing MongoDB connection...')
-    await Engine.connect_to_mongo()
+    await Engine.create_db_connection()
 
 
 # ---------------------------------------------------------
 #
 async def shutdown(service: Service):
-    """ Close MongoDB connection. """
+    """ Close MongoDB connection.
+
+    :param service: FastAPI service instance.
+    """
+
+    if service.rabbit_client.is_connected:
+        service.logger.info('Disconnecting from RabbitMQ...')
+        await service.rabbit_client.stop()
 
     service.logger.info('Disconnecting from MongoDB...')
-    await Engine.close_mongo_connection()
+    await Engine.close_db_connection()

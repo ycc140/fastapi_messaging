@@ -5,10 +5,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-25 00:01:55
-     $Rev: 41
+    $Date: 2024-03-20 23:32:42
+     $Rev: 65
 """
 
 # BUILTIN modules
@@ -18,7 +19,7 @@ import argparse
 from pprint import pprint
 
 # Third party modules
-from aioredis import from_url
+from redis.asyncio import from_url
 
 # Local modules
 from src.config.setup import config

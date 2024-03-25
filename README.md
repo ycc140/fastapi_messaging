@@ -1,5 +1,5 @@
 # fastapi_messaging
-<img width="85%" src="design_docs/order_container_diagram.png"/>
+<img width="85%" src="design_docs/order_container_diagram.png" alt=""/>
 
 Elaborate Microservice async example with FastAPI, RabbitMQ, MongoDB and Redis.
 
@@ -16,7 +16,7 @@ This part talks about the problem space and a solution to handle asynchronous ev
 This part talks about the OrderService architecture and design patterns that are used and the resulting directory structure of the implementation.
 
 #### [Part 3: OrderService usage of RabbitMQ](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part3-d73393739277)
-This part talks abour RabbitMQ integration with FastAPI.
+This part talks about RabbitMQ integration with FastAPI.
 
 #### [Part 4: PaymentService Architecture and Design patterns](https://medium.com/@wilde.consult/elaborate-microservice-async-example-with-fastapi-rabbitmq-mongodb-and-redis-part4-e50b22ce0a04)
 This part talks about the PaymentService architecture and design patterns that are used and the resulting directory structure of the implementation.

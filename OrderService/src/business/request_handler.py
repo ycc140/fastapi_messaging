@@ -4,28 +4,33 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-30 13:14:04
-     $Rev: 48
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 # BUILTIN modules
+from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
 
 # Third party modules
-from pydantic import UUID4
 from fastapi import HTTPException
 from httpx import AsyncClient, ConnectTimeout
 
 # Local modules
-from ..config.setup import config
-from ..repository.url_cache import UrlCache
-from ..web.api.schemas import OrderResponse
-from .schemas import PaymentPayload, MetadataSchema
-from ..repository.order_data_adapter import OrdersRepository
+from ..web.api.models import OrderResponse
+from ..config.setup import config, SSL_CONTEXT
+from ..repository.interface import IRepository
+from ..repository.url_cache import UrlServiceCache
+from .models import PaymentPayload, MetadataSchema
 from ..repository.models import Status, OrderItems, OrderModel, StateUpdateSchema
+
+# Constants
+HDR_DATA = {'Content-Type': 'application/json',
+            'X-API-Key': f'{config.service_api_key}'}
 
 
 # ------------------------------------------------------------------------
@@ -33,28 +38,50 @@ from ..repository.models import Status, OrderItems, OrderModel, StateUpdateSchem
 class OrderApiLogic:
     """
     This class implements the OrderService web API business logic layer.
+
+    :ivar _id: Order id.
+    :type _id: `UUID`
+    :ivar items: Ordered items.
+    :type items: `OrderItems`
+    :ivar _status: Current order status.
+    :type _status: `Status`
+    :ivar updated: List of updated items.
+    :type updated: List[StateUpdateSchema]
+    :ivar _created: Order created timestamp.
+    :type _created: `datetime`
+    :ivar kitchen_id: It does not exist before the scheduled state.
+    :type kitchen_id: `UUID`
+    :ivar delivery_id: It does not exist before the dispatched state.
+    :type delivery_id: `UUID`
+    :ivar customer_id: Customer identity.
+    :type customer_id: `UUID`
+    :ivar repo: DB repository.
+    :type repo: `IRepository`
+    :ivar cache: Redis client.
+    :type cache: `UrlServiceCache`
     """
 
     # ---------------------------------------------------------
     #
     def __init__(
             self,
-            id: UUID4,
+            id: UUID,
             created: datetime,
             items: OrderItems,
-            repository: OrdersRepository,
+            repository: IRepository,
             updated: List[StateUpdateSchema],
-            status: Status, customer_id: UUID4,
-            kitchen_id: Optional[UUID4] = None,
-            delivery_id: Optional[UUID4] = None,
+            status: Status, customer_id: UUID,
+            kitchen_id: Optional[UUID] = None,
+            delivery_id: Optional[UUID] = None,
     ):
         """ The class initializer.
 
         :param id: Order id.
         :param created: Order created timestamp.
         :param items: Ordered items.
+        :param repository: Current repository.
+        :param updated: Updated items.
         :param status: Current order status.
-        :param customer_id: The individual that created the order.
         :param kitchen_id: Does not exist before the scheduled state.
         :param delivery_id: Does not exist before the dispatched state.
         """
@@ -69,15 +96,15 @@ class OrderApiLogic:
 
         # Initialize objects.
         self.repo = repository
-        self.cache = UrlCache(config.redis_url)
+        self.cache = UrlServiceCache(config.redis_url)
 
     # ---------------------------------------------------------
     #
     @property
-    def id(self) -> UUID4:
+    def id(self) -> UUID:
         """ Return order id.
 
-        :return: order id.
+        :return: Order id.
         """
         return self._id
 
@@ -87,7 +114,7 @@ class OrderApiLogic:
     def created(self) -> datetime:
         """ Return current order creation time.
 
-        :return: datetime when the order was created.
+        :return: Datetime when the order was created.
         """
         return self._created
 
@@ -97,17 +124,17 @@ class OrderApiLogic:
     def status(self) -> Status:
         """ Return current order status.
 
-        :return: current status
+        :return: Current status
         """
         return self._status
 
     # ---------------------------------------------------------
     #
-    async def _pay(self) -> None:
+    async def _pay(self):
         """ Trigger payment of ordered items.
 
-        :raise HTTPException [400]: when PaymentService response code != 202.
-        :raise HTTPException [500]: when connection with PaymentService failed.
+        :raise HTTPException [400]: When PaymentService response code != 202.
+        :raise HTTPException [500]: When connection with PaymentService failed.
         """
         meta = MetadataSchema(order_id=self.id,
                               customer_id=self.customer_id,
@@ -117,28 +144,32 @@ class OrderApiLogic:
         try:
             root = await self.cache.get('PaymentService')
 
-            async with AsyncClient() as client:
+            async with AsyncClient(verify=SSL_CONTEXT,
+                                   headers=HDR_DATA) as client:
                 url = f"{root}/v1/payments"
                 response = await client.post(url=url,
-                                             json=payment.dict(),
+                                             json=payment.model_dump(),
                                              timeout=config.url_timeout)
 
             if response.status_code != 202:
-                errmsg = f"Failed PaymentService POST request for URL {url} with Order ID "  \
-                         f"{self.id} - [{response.status_code}: {response.json()['detail']}]."
+                errmsg = (f"Failed PaymentService POST request for URL {url} with Order ID "
+                          f"{self.id} - [{response.status_code}: {response.json()['detail']}].")
                 raise HTTPException(status_code=400, detail=errmsg)
 
         except ConnectTimeout:
             errmsg = f'No connection with PaymentService on URL {url}'
             raise HTTPException(status_code=500, detail=errmsg)
+
+        finally:
+            await self.cache.close()
 
     # ---------------------------------------------------------
     #
-    async def _reimburse(self) -> None:
-        """ Trigger reimbursement of cancelled order items.
+    async def _reimburse(self):
+        """ Trigger reimbursement of canceled order items.
 
-        :raise HTTPException [400]: when PaymentService response code != 202.
-        :raise HTTPException [500]: when connection with PaymentService failed.
+        :raise HTTPException [400]: When PaymentService response code != 202.
+        :raise HTTPException [500]: When connection with PaymentService failed.
         """
         meta = MetadataSchema(order_id=self.id,
                               customer_id=self.customer_id,
@@ -148,29 +179,34 @@ class OrderApiLogic:
         try:
             root = await self.cache.get('PaymentService')
 
-            async with AsyncClient() as client:
+            async with AsyncClient(verify=SSL_CONTEXT,
+                                   headers=HDR_DATA) as client:
                 url = f"{root}/v1/payments/reimburse"
                 response = await client.post(url=url,
-                                             json=payment.dict(),
+                                             json=payment.model_dump(),
                                              timeout=config.url_timeout)
 
             if response.status_code != 202:
-                errmsg = f"Failed PaymentService POST request for URL {url} with Order ID "  \
-                         f"{self.id} - [{response.status_code}: {response.json()['detail']}]."
+                errmsg = (f"Failed PaymentService POST request for URL {url} with Order ID "
+                          f"{self.id} - [{response.status_code}: {response.json()['detail']}].")
                 raise HTTPException(status_code=400, detail=errmsg)
 
         except ConnectTimeout:
             errmsg = f'No connection with PaymentService on URL {url}'
             raise HTTPException(status_code=500, detail=errmsg)
+
+        finally:
+            await self.cache.close()
 
     # ---------------------------------------------------------
     #
     async def create(self) -> OrderResponse:
         """ Charge the Customers Credit Card and create a new order in DB.
 
-        :raise HTTPException [400]: when PaymentService response code != 202.
-        :raise HTTPException [500]: when connection with PaymentService failed.
-        :raise HTTPException [400]: when create order in DB api_db.orders failed.
+        :return: Order response.
+        :raise HTTPException [400]: When PaymentService response code != 202.
+        :raise HTTPException [500]: When connection with PaymentService failed.
+        :raise HTTPException [400]: When create order in DB api_db.orders failed.
         """
         await self._pay()
 
@@ -182,17 +218,18 @@ class OrderApiLogic:
             errmsg = f"Create failed for {self.id=} in api_db.orders"
             raise HTTPException(status_code=400, detail=errmsg)
 
-        return OrderResponse(**db_order.dict())
+        return OrderResponse(**db_order.model_dump())
 
     # ---------------------------------------------------------
     #
     async def cancel(self) -> OrderResponse:
-        """ Cancel current order.
+        """ Cancel the current order.
 
         NOTE: this can only be done before a driver is available (status DRAV).
 
-        :raise HTTPException [400]: when cancel request came too late.
-        :raise HTTPException [400]: when Order update in DB api_db.orders failed.
+        :return: Order response.
+        :raise HTTPException [400]: When cancel request came too late.
+        :raise HTTPException [400]: When Order update in DB api_db.orders failed.
         """
         await self._reimburse()
 
@@ -212,18 +249,18 @@ class OrderApiLogic:
             errmsg = f"Failed updating {self.id=} in api_db.orders"
             raise HTTPException(status_code=400, detail=errmsg)
 
-        return OrderResponse(**db_order.dict())
+        return OrderResponse(**db_order.model_dump())
 
     # ---------------------------------------------------------
     #
-    async def delete(self) -> None:
+    async def delete(self):
         """ Delete current order.
 
-        :raise HTTPException [404]: when Order not found in DB api_db.orders.
+        :raise HTTPException [404]: When Order not found in DB api_db.orders.
         """
-        response = await self.repo.delete(self.id)
+        successful = await self.repo.delete(self.id)
 
-        if response.deleted_count == 0:
+        if not successful:
             errmsg = f"{self.id=} not found in api_db.orders"
             raise HTTPException(status_code=404, detail=errmsg)
 

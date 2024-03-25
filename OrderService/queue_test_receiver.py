@@ -5,10 +5,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-25 00:01:55
-     $Rev: 41
+    $Date: 2024-03-22 20:51:42
+     $Rev: 69
 """
 
 # BUILTIN modules
@@ -21,32 +22,38 @@ from src.tools.rabbit_client import RabbitClient
 
 # Constants
 SERVICE = 'TestService'
+""" Service name. """
 
 
 # ---------------------------------------------------------
 #
 async def process_incoming_message(message: dict):
+    """ Print the incoming message.
+
+    :param message: Incoming message.
+    """
     print(f'Received: {message}')
 
 
 # ---------------------------------------------------------
 #
 async def receiver():
+    """ Receive RabbitMQ messages. """
     print('Started RabbitMQ message queue subscription...')
     client = RabbitClient(config.rabbit_url, SERVICE, process_incoming_message)
-    connection = await asyncio.create_task(client.consume())
+    await client.start()
+    await asyncio.create_task(client.start_subscription())
 
     try:
-        # Wait until terminate
+        # Wait until termination.
         await asyncio.Future()
 
     finally:
-        await connection.close()
+        await client.stop()
 
 
 # ---------------------------------------------------------
 
 if __name__ == "__main__":
-
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(receiver())

@@ -4,15 +4,16 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-21 22:20:47
-     $Rev: 27
+    $Date: 2024-03-24 04:30:19
+     $Rev: 71
 """
 
 order_documentation = {
     "status": {'description': 'Order workflow status.'},
-    "updated": {'example': [{"`2023-03-10T12:15:23.123234`", "paymentPaid"}],
+    "updated": {'example': [{"`2024-03-10T12:15:23.123234`", "paymentPaid"}],
                 'default': [], 'description': 'Order status change history.'},
     "when": {'example': "`2023-03-10T12:15:23.123234`",
              'description': 'Timestamp for the Order status change.'},
@@ -27,3 +28,4 @@ order_documentation = {
     "customer_id": {'example': 'f2861560-e9ed-4463-955f-0c55c3b416fb',
                     'description': 'Customer ID for the person that created the Order.'},
 }
+""" OpenAPI order documentation. """

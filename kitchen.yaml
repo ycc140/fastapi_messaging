@@ -40,7 +40,7 @@ paths:
       description: '***Health check endpoint..***'
       summary: Health Check
       tags:
-      - Health
+        - Health
       responses:
         '200':
           description: Successful Response
@@ -101,7 +101,7 @@ components:
           items:
             $ref: '#/components/schemas/OrderItemSchema'
         metadata:
-            $ref: '#/components/schemas/MetadataSchema'
+          $ref: '#/components/schemas/MetadataSchema'
 
     KitchenResponse:
       type: object
@@ -131,7 +131,7 @@ components:
           items:
             $ref: '#/components/schemas/OrderItemSchema'
         metadata:
-            $ref: '#/components/schemas/MetadataSchema'
+          $ref: '#/components/schemas/MetadataSchema'
 
     MetadataSchema:
       type: object

@@ -5,10 +5,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-25 00:01:55
-     $Rev: 41
+    $Date: 2024-03-22 20:51:42
+     $Rev: 69
 """
 
 # BUILTIN modules
@@ -84,9 +85,11 @@ async def sender(args: argparse.Namespace):
     :param args: Command line arguments.
     """
     client = RabbitClient(config.rabbit_url)
+    await client.start()
     message = _build_message(args.pid, args.order_id)
-    await client.send_message(message, message['metadata']['receiver'])
+    await client.publish_message(message['metadata']['receiver'], message)
     print(f"message sent to '{message['metadata']['receiver']}'\n{message}")
+    await client.stop()
 
 
 # ---------------------------------------------------------

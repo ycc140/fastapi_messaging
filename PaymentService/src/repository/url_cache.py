@@ -4,29 +4,33 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2023-03-24 23:18:27
-     $Rev: 38
+    $Date: 2024-03-24 19:33:51
+     $Rev: 72
 """
 
 # Third party modules
-from aioredis import from_url
+from redis.asyncio import from_url
 
 # Local modules
 from .db import Engine
 
 # Constants
-EXPIRE = 60*60*24
-""" Redis keys expire after 24h. """
+EXPIRE = 60 * 60 * 24
+""" Cached service URLs expire after 24h. """
 
 
 # ------------------------------------------------------------------------
 #
-class UrlCache:
+class UrlServiceCache:
     """ This class handles Redis URL cache.
 
     Is automatically populated from MongoDB api_db.service_urls collection.
+
+    :ivar client: Current Redis async client instance.
+    :type client: redis.asyncio.Redis
     """
 
     # ---------------------------------------------------------
@@ -56,3 +60,9 @@ class UrlCache:
             await self.client.set(key, value['url'], ex=EXPIRE)
 
         return value.decode() if isinstance(value, bytes) else value['url']
+
+    # ---------------------------------------------------------
+    #
+    async def close(self):
+        """ Close redis connection. """
+        await self.client.close()

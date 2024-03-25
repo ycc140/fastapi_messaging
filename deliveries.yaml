@@ -24,7 +24,7 @@ paths:
         content:
           application/json:
             schema:
-                $ref: '#/components/schemas/DeliveryPayload'
+              $ref: '#/components/schemas/DeliveryPayload'
 
       responses:
         '202':
@@ -41,7 +41,7 @@ paths:
       description: '***Health check endpoint..***'
       summary: Health Check
       tags:
-      - Health
+        - Health
       responses:
         '200':
           description: Successful Response
@@ -103,9 +103,9 @@ components:
           items:
             $ref: '#/components/schemas/OrderItemSchema'
         metadata:
-            $ref: '#/components/schemas/MetadataSchema'
+          $ref: '#/components/schemas/MetadataSchema'
         address:
-            $ref: '#/components/schemas/CustomerAddressSchema'
+          $ref: '#/components/schemas/CustomerAddressSchema'
 
     DeliveryResponse:
       type: object
@@ -135,7 +135,7 @@ components:
           items:
             $ref: '#/components/schemas/OrderItemSchema'
         metadata:
-            $ref: '#/components/schemas/MetadataSchema'
+          $ref: '#/components/schemas/MetadataSchema'
 
     MetadataSchema:
       type: object
