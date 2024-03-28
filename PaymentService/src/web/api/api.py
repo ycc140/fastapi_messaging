@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-22 20:51:42
-     $Rev: 69
+    $Date: 2024-03-28 17:08:24
+     $Rev: 2
 """
 
 # Third party modules
@@ -24,7 +24,8 @@ from .models import (PaymentAcknowledge, BillingCallback,
 from ...repository.payment_data_adapter import payments_repository
 
 # Constants
-ROUTER = APIRouter(prefix="/v1/payments", tags=["Payments"])
+ROUTER = APIRouter(prefix="/v1/payments", tags=["Payments"],
+                   dependencies=[Depends(validate_authentication)])
 """ Payments API endpoint router. """
 
 
@@ -36,8 +37,7 @@ ROUTER = APIRouter(prefix="/v1/payments", tags=["Payments"])
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         400: {"model": ApiError},
-        500: {'model': ConnectError}},
-    dependencies=[Depends(validate_authentication)]
+        500: {'model': ConnectError}}
 )
 async def create_payment(payload: PaymentPayload,
                          request: Request) -> PaymentAcknowledge:
@@ -62,8 +62,7 @@ async def create_payment(payload: PaymentPayload,
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         400: {"model": ApiError},
-        500: {'model': ConnectError}},
-    dependencies=[Depends(validate_authentication)]
+        500: {'model': ConnectError}}
 )
 async def reimburse_payment(payload: PaymentPayload,
                             request: Request) -> PaymentAcknowledge:
@@ -86,7 +85,6 @@ async def reimburse_payment(payload: PaymentPayload,
     '/callback',
     response_model=BillingCallback,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(validate_authentication)]
 )
 async def billing_response(payload: BillingCallback,
                            request: Request) -> BillingCallback:

@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-22 20:51:42
-     $Rev: 69
+    $Date: 2024-03-28 17:08:24
+     $Rev: 2
 """
 
 # BUILTIN modules
@@ -28,7 +28,8 @@ from .models import (OrderPayload, OrderResponse,
                      NotFoundError, FailedUpdateError, ConnectError)
 
 # Constants
-ROUTER = APIRouter(prefix="/v1/orders", tags=["Orders"])
+ROUTER = APIRouter(prefix="/v1/orders", tags=["Orders"],
+                   dependencies=[Depends(validate_authentication)])
 """ Order API endpoint router. """
 
 
@@ -40,8 +41,7 @@ ROUTER = APIRouter(prefix="/v1/orders", tags=["Orders"])
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         500: {'model': ConnectError},
-        400: {"model": FailedUpdateError}},
-    dependencies=[Depends(validate_authentication)]
+        400: {"model": FailedUpdateError}}
 )
 async def create_order(payload: OrderPayload) -> OrderResponse:
     """ **Create a new Order in the DB and trigger a payment.**
@@ -62,8 +62,7 @@ async def create_order(payload: OrderPayload) -> OrderResponse:
     responses={
         500: {'model': ConnectError},
         404: {"model": NotFoundError},
-        400: {"model": FailedUpdateError}},
-    dependencies=[Depends(validate_authentication)]
+        400: {"model": FailedUpdateError}}
 )
 async def cancel_order(order_id: UUID = order_id_documentation) -> OrderResponse:
     """
@@ -80,8 +79,7 @@ async def cancel_order(order_id: UUID = order_id_documentation) -> OrderResponse
 #
 @ROUTER.get(
     "",
-    response_model=List[OrderResponse],
-    dependencies=[Depends(validate_authentication)]
+    response_model=List[OrderResponse]
 )
 async def get_all_orders() -> List[OrderResponse]:
     """ **Read all Orders from the DB sorted on created timestamp.**
@@ -97,8 +95,7 @@ async def get_all_orders() -> List[OrderResponse]:
 @ROUTER.get(
     "/{order_id}",
     response_model=OrderResponse,
-    responses={404: {"model": NotFoundError}},
-    dependencies=[Depends(validate_authentication)]
+    responses={404: {"model": NotFoundError}}
 )
 async def get_order(order_id: UUID = order_id_documentation) -> OrderResponse:
     """ **Read Order for matching order_id from the DB.**
@@ -116,7 +113,6 @@ async def get_order(order_id: UUID = order_id_documentation) -> OrderResponse:
     "/{order_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={404: {"model": NotFoundError}},
-    dependencies=[Depends(validate_authentication)],
     response_description='Order was successfully deleted in the DB.'
 )
 async def delete_order(order_id: UUID = order_id_documentation) -> Response:
