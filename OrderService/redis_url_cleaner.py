@@ -8,8 +8,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-22 20:51:42
-     $Rev: 69
+    $Date: 2024-04-09 05:39:25
+     $Rev: 4
 """
 
 # BUILTIN modules
@@ -19,7 +19,7 @@ import asyncio
 from redis.asyncio import from_url
 
 # Local modules
-from src.config.setup import config
+from src.core.setup import config
 
 # Constants
 URLS = {'PaymentService',

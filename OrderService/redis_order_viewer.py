@@ -8,8 +8,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-20 23:32:42
-     $Rev: 65
+    $Date: 2024-04-09 05:39:25
+     $Rev: 4
 """
 
 # BUILTIN modules
@@ -22,7 +22,7 @@ from pprint import pprint
 from redis.asyncio import from_url
 
 # Local modules
-from src.config.setup import config
+from src.core.setup import config
 
 
 # ---------------------------------------------------------

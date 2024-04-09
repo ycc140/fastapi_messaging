@@ -8,15 +8,15 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-22 20:51:42
-     $Rev: 69
+    $Date: 2024-04-09 05:39:25
+     $Rev: 4
 """
 
 # BUILTIN modules
 import asyncio
 
 # Local modules
-from src.config.setup import config
+from src.core.setup import config
 from src.tools.rabbit_client import RabbitClient
 
 # Constants
