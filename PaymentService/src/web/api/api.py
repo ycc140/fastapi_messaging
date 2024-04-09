@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-09 06:22:27
+     $Rev: 6
 """
 
 # Third party modules
@@ -18,7 +18,7 @@ from fastapi import APIRouter, Request, Depends, status
 from ...core.setup import config
 from ...repository.url_cache import UrlServiceCache
 from ...business.payment_handler import PaymentLogic
-from ...tools.security import validate_authentication
+from ...core.security import validate_authentication
 from .models import (PaymentAcknowledge, BillingCallback,
                      ApiError, ConnectError, PaymentPayload)
 from ...repository.payment_data_adapter import payments_repository

@@ -4,10 +4,11 @@ Copyright: Wilde Consulting
   License: Apache 2.0
 
 VERSION INFO::
+
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-09 06:22:27
+     $Rev: 6
 """
 
 # Third party modules
