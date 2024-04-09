@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 06:17:52
+     $Rev: 5
 """
 
 # BUILTIN modules
@@ -42,7 +42,7 @@ class IRepository(Protocol):
         ...
 
     async def read(self, key: UUID) -> OrderModel:
-        """ Read Order for matching index key.
+        """ Read Order for a matching index key.
 
         :param key: Index key.
         :return: Found Order.
