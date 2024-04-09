@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
@@ -22,7 +22,7 @@ from redis.asyncio import from_url
 
 # Local modules
 from .db import Engine
-from ..config.setup import config
+from ..core.setup import config
 from .models import OrderModel, OrderUpdateModel, dict_of
 
 # Constants
@@ -56,7 +56,7 @@ class MongoRepository:
         """
         response = await self.engine.db.orders.find_one({"_id": str(key)})
 
-        return OrderModel.from_mongo(response)
+        return OrderModel.from_mongo(response) if response else None
 
     # ---------------------------------------------------------
     #
@@ -115,6 +115,10 @@ class MongoRepository:
 
         if not value:
             payload = await self._read(key)
+
+            if not payload:
+                return None
+
             value = ujson.dumps(dict_of(payload))
             await self.client.set(str(key), value, ex=EXPIRE)
 

@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-28 17:08:24
-     $Rev: 2
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
@@ -22,7 +22,7 @@ from fastapi import APIRouter, status, Depends
 # Local modules
 from .order_api_adapter import OrdersApi
 from .documentation import order_id_documentation
-from ...tools.security import validate_authentication
+from ...core.security import validate_authentication
 from ...repository.order_data_adapter import orders_repository
 from .models import (OrderPayload, OrderResponse,
                      NotFoundError, FailedUpdateError, ConnectError)

@@ -6,8 +6,8 @@ Copyright: Wilde Consulting
 VERSION INFO::
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-25 20:23:06
-     $Rev: 1
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # Third party modules
@@ -15,7 +15,7 @@ from fastapi.security import APIKeyHeader
 from fastapi import HTTPException, Security, status
 
 # local modules
-from ..config.setup import config
+from ..core.setup import config
 
 # Constants
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key")

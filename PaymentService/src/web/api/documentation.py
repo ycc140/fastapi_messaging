@@ -7,14 +7,14 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # Local modules
-from ...config.setup import config
+from ...core.setup import config
 
-resource_example = {
+health_example = {
     "status": True,
     "cert_remaining_days": 820,
     "version": f"{config.version}",

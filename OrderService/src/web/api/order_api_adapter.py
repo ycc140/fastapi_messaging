@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
@@ -55,7 +55,7 @@ class OrdersApi:
         db_order = await self.repo.read(order_id)
 
         if not db_order:
-            errmsg = f"{order_id=} not found in DB api_db.orders"
+            errmsg = f"order_id '{order_id}' not found in DB api_db.orders"
             raise HTTPException(status_code=404, detail=errmsg)
 
         return db_order

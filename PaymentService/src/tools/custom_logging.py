@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
@@ -21,7 +21,7 @@ from types import FrameType
 from loguru import logger
 
 # Local modules
-from ..config.setup import config
+from ..core.setup import config
 
 
 # ---------------------------------------------------------

@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
@@ -20,7 +20,7 @@ from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
 
 # Local modules
-from ..api.documentation import resource_example
+from ..api.documentation import health_example
 from ...repository.models import Status, OrderItems
 from ...repository.documentation import order_documentation as order_doc
 
@@ -123,7 +123,7 @@ class HealthResponseModel(BaseModel):
     :ivar cert_remaining_days: Valid remaining TLS/SLL certificate days.
     :ivar resources: Status for individual resources.
     """
-    model_config = ConfigDict(json_schema_extra={"example": resource_example})
+    model_config = ConfigDict(json_schema_extra={"example": health_example})
 
     name: str
     status: bool

@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
@@ -22,7 +22,7 @@ from pydantic import (BaseModel, Field, PositiveFloat,
 
 # Local modules
 from ...repository.models import Status, MetadataSchema
-from .documentation import (resource_example, billing_example,
+from .documentation import (health_example, billing_example,
                             metadata_documentation as meta_doc,
                             callback_documentation as callback)
 
@@ -192,7 +192,7 @@ class HealthResponseModel(BaseModel):
     :ivar cert_remaining_days: Valid remaining TLS/SLL certificate days.
     :ivar resources: Status for individual resources.
     """
-    model_config = ConfigDict(json_schema_extra={"example": resource_example})
+    model_config = ConfigDict(json_schema_extra={"example": health_example})
 
     name: str
     version: str

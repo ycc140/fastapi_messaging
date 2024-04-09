@@ -7,12 +7,11 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-25 00:13:58
-     $Rev: 73
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
-import json
 import asyncio
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -22,7 +21,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 # Local modules
-from ..config.setup import config
+from ..core.setup import config
 from ..repository.db import Engine
 from .api import api, health_route
 from .api.models import ValidStatus
@@ -144,12 +143,6 @@ app = Service(
     # swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"}
 )
 """ The FastAPI application instance. """
-
-# So you can se test the handling of different log levels.
-app.logger.info(f'{config.name} v{config.version} is initializing...')
-
-# Log config values for testing purposes.
-app.logger.trace(f'config: {json.dumps(config.model_dump(), indent=2)}')
 
 
 # ---------------------------------------------------------

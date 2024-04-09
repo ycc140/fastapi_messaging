@@ -7,15 +7,15 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-28 17:08:24
-     $Rev: 2
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # Third party modules
 from fastapi import APIRouter, Request, Depends, status
 
 # Local modules
-from ...config.setup import config
+from ...core.setup import config
 from ...repository.url_cache import UrlServiceCache
 from ...business.payment_handler import PaymentLogic
 from ...tools.security import validate_authentication
@@ -48,8 +48,8 @@ async def create_payment(payload: PaymentPayload,
     :return: Payment acknowledge model.
     """
     worker = PaymentLogic(repository=payments_repository,
-                          cache=UrlServiceCache(config.redis_url),
-                          client=request.app.rabbit_client)
+                          client=request.app.rabbit_client,
+                          cache=UrlServiceCache(config.redis_url))
     await worker.process_payment_request(payload)
     return PaymentAcknowledge(order_id=payload.metadata.order_id)
 
@@ -73,8 +73,8 @@ async def reimburse_payment(payload: PaymentPayload,
     :return: Payment acknowledge model.
     """
     worker = PaymentLogic(repository=payments_repository,
-                          cache=UrlServiceCache(config.redis_url),
-                          client=request.app.rabbit_client)
+                          client=request.app.rabbit_client,
+                          cache=UrlServiceCache(config.redis_url))
     await worker.process_reimbursement_request(payload)
     return PaymentAcknowledge(order_id=payload.metadata.order_id)
 
@@ -95,6 +95,6 @@ async def billing_response(payload: BillingCallback,
     :return: Billing callback model.
     """
     worker = PaymentLogic(repository=payments_repository,
-                          cache=UrlServiceCache(config.redis_url),
-                          client=request.app.rabbit_client)
+                          client=request.app.rabbit_client,
+                          cache=UrlServiceCache(config.redis_url))
     return await worker.process_response(payload)

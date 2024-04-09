@@ -8,4 +8,4 @@ pydantic-settings==2.2.1
 redis[hiredis]==5.0.3
 ujson==5.9.0
 uuid7==0.1.0
-uvicorn[standard]==0.29.0
+uvicorn[standard]==0.28.1

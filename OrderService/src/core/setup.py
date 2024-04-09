@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-09 05:37:36
+     $Rev: 3
 """
 
 # BUILTIN modules
@@ -27,10 +27,10 @@ from pydantic_settings import (PydanticBaseSettingsSource,
 # Constants
 ENVIRONMENT = getenv('ENVIRONMENT', 'dev')
 """ Current platform environment. """
-MISSING_ENV = '>>> missing ENV value <<<'
-""" Error message for missing values in the .env file. """
 MISSING_SECRET = '>>> missing SECRETS file <<<'
 """ Error message for missing secrets file. """
+MISSING_ENV = '>>> missing ENV value <<<'
+""" Error message for missing values in the .env file. """
 CERT_PATH = Path(__file__).parent.parent.parent / 'certs'
 """ Local certificate path. """
 SECRETS_DIR = ('/run/secrets'
