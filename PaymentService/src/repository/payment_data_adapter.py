@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-19 11:40:10
+     $Rev: 7
 """
 
 # BUILTIN modules
@@ -17,7 +17,6 @@ from uuid import UUID
 # Local modules
 from .models import PaymentModel
 from .interface import IRepository
-from .mongo_repository import MongoRepository
 
 
 # ------------------------------------------------------------------------
@@ -71,7 +70,3 @@ class PaymentRepository:
         :return: DB update result.
         """
         return await self.repository.update(payload)
-
-
-payments_repository = PaymentRepository(MongoRepository())
-""" Repository injected with MongoDB implementation. """

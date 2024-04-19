@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-19 11:40:10
+     $Rev: 7
 """
 
 # BUILTIN modules
@@ -57,8 +57,6 @@ class OrderApiLogic:
     :type customer_id: `UUID`
     :ivar repo: DB repository.
     :type repo: `IRepository`
-    :ivar cache: Redis client.
-    :type cache: `UrlServiceCache`
     """
 
     # ---------------------------------------------------------
@@ -96,7 +94,6 @@ class OrderApiLogic:
 
         # Initialize objects.
         self.repo = repository
-        self.cache = UrlServiceCache(config.redis_url)
 
     # ---------------------------------------------------------
     #
@@ -136,13 +133,14 @@ class OrderApiLogic:
         :raise HTTPException [400]: When PaymentService response code != 202.
         :raise HTTPException [500]: When connection with PaymentService failed.
         """
+        cache = UrlServiceCache(config.redis_url)
         meta = MetadataSchema(order_id=self.id,
                               customer_id=self.customer_id,
                               receiver=f'{config.service_name}')
         payment = PaymentPayload(metadata=meta, **self.dict())
 
         try:
-            root = await self.cache.get('PaymentService')
+            root = await cache.get('PaymentService')
 
             async with AsyncClient(verify=SSL_CONTEXT,
                                    headers=HDR_DATA) as client:
@@ -161,7 +159,7 @@ class OrderApiLogic:
             raise HTTPException(status_code=500, detail=errmsg)
 
         finally:
-            await self.cache.close()
+            await cache.close()
 
     # ---------------------------------------------------------
     #
@@ -171,13 +169,14 @@ class OrderApiLogic:
         :raise HTTPException [400]: When PaymentService response code != 202.
         :raise HTTPException [500]: When connection with PaymentService failed.
         """
+        cache = UrlServiceCache(config.redis_url)
         meta = MetadataSchema(order_id=self.id,
                               customer_id=self.customer_id,
                               receiver=f'{config.service_name}')
         payment = PaymentPayload(metadata=meta, **self.dict())
 
         try:
-            root = await self.cache.get('PaymentService')
+            root = await cache.get('PaymentService')
 
             async with AsyncClient(verify=SSL_CONTEXT,
                                    headers=HDR_DATA) as client:
@@ -196,7 +195,7 @@ class OrderApiLogic:
             raise HTTPException(status_code=500, detail=errmsg)
 
         finally:
-            await self.cache.close()
+            await cache.close()
 
     # ---------------------------------------------------------
     #

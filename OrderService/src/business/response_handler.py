@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-19 11:40:10
+     $Rev: 7
 """
 
 # BUILTIN modules
@@ -35,19 +35,15 @@ class OrderResponseLogic:
 
     :ivar repo: DB repository.
     :type repo: `IRepository`
-    :ivar cache: Redis client.
-    :type cache: `UrlServiceCache`
     """
 
     # ---------------------------------------------------------
     #
-    def __init__(self, repository: IRepository, cache: UrlServiceCache):
+    def __init__(self, repository: IRepository):
         """ The class initializer.
 
         :param repository: Data layer handler object.
-        :param cache: Redis client.
         """
-        self.cache = cache
         self.repo = repository
 
     # ---------------------------------------------------------
@@ -74,12 +70,14 @@ class OrderResponseLogic:
         :param message: PaymentService response message.
         :param order: Current Order.
         """
+        service = 'CustomerService'
+        cache = UrlServiceCache(config.redis_url)
+
         try:
-            root = await self.cache.get('CustomerService')
+            root = await cache.get(service)
 
             # Get Customer Address information.
             async with AsyncClient() as client:
-                service = 'CustomerService'
                 url = f"{root}/v1/customers/{order.customer_id}/address"
                 resp = await client.get(url=url, timeout=config.url_timeout)
 
@@ -91,11 +89,11 @@ class OrderResponseLogic:
             payload = DeliveryPayload(metadata=message['metadata'],
                                       address=resp.json(), **order.model_dump())
 
-            root = await self.cache.get('DeliveryService')
+            service = 'DeliveryService'
+            root = await cache.get(service)
 
             # Request DeliveryService work.
             async with AsyncClient() as client:
-                service = 'DeliveryService'
                 url = f"{root}/v1/deliveries"
                 resp = await client.post(url=url, json=payload.model_dump(),
                                          timeout=config.url_timeout)
@@ -116,7 +114,7 @@ class OrderResponseLogic:
             raise ConnectionError(errmsg)
 
         finally:
-            await self.cache.close()
+            await cache.close()
 
     # ---------------------------------------------------------
     #
@@ -126,10 +124,11 @@ class OrderResponseLogic:
         :param message: DeliveryService metadata response message.
         :param order: Current Order.
         """
+        cache = UrlServiceCache(config.redis_url)
         payload = KitchenPayload(metadata=message['metadata'], **order.model_dump())
 
         try:
-            root = await self.cache.get('KitchenService')
+            root = await cache.get('KitchenService')
 
             # Request KitchenService work.
             async with AsyncClient() as client:
@@ -153,7 +152,7 @@ class OrderResponseLogic:
             raise ConnectionError(errmsg)
 
         finally:
-            await self.cache.close()
+            await cache.close()
 
     # ---------------------------------------------------------
     #

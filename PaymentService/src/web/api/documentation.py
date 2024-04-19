@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-19 11:40:10
+     $Rev: 7
 """
 
 # Local modules
@@ -113,7 +113,7 @@ description = """
 process.** 
 
 This service handles Customer Credit Card payments using external Credit Card Companies. Required payload is 
- `PaymentPayload` and the response is `PaymentResponse`. Both schemas are described in detail under Schemas below.
+ `PaymentPayload` and the response is `PaymentAcknowledge`. Both schemas are described in detail under Schemas below.
 
 <br>**The following HTTP status codes are returned:**
   * `200:` Successful Health response.

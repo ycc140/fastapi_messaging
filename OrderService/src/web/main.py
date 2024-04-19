@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-19 11:40:10
+     $Rev: 7
 """
 
 # BUILTIN modules
@@ -25,13 +25,12 @@ from ..core.setup import config
 from ..repository.db import Engine
 from .api import api, health_route
 from .api.models import ValidStatus
+from ..repository import orders_repository
 from ..tools.rabbit_client import RabbitClient
-from ..repository.url_cache import UrlServiceCache
 from ..tools.custom_logging import create_unified_logger
 from ..business.response_handler import OrderResponseLogic
 from .api.documentation import (servers, license_info,
                                 tags_metadata, description)
-from ..repository.order_data_adapter import orders_repository
 
 
 # ---------------------------------------------------------
@@ -95,8 +94,7 @@ class Service(FastAPI):
             # Verify that message status is valid.
             ValidStatus(status=message.get('status'))
 
-            worker = OrderResponseLogic(repository=orders_repository,
-                                        cache=UrlServiceCache(config.redis_url))
+            worker = OrderResponseLogic(repository=orders_repository)
             await asyncio.create_task(worker.process_response(message))
 
         except RuntimeError as why:
