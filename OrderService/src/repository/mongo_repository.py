@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -21,8 +21,8 @@ from pymongo import DESCENDING
 from redis.asyncio import from_url
 
 # Local modules
-from .db import Engine
 from ..core.setup import config
+from .db import AsyncIOMotorClientSession
 from .models import OrderModel, OrderUpdateModel, dict_of
 
 # Constants
@@ -38,13 +38,21 @@ class MongoRepository:
     The Order object is cached in Redis. This is handled by the read, update
     and delete methods.
 
-    :ivar engine: MongoDb database async engine instance.
-    :type engine: `Engine`
-    :ivar client: Redis client.
-    :type client: redis.asyncio.Redis
+    :ivar session: MongoDb database async client session.
+    :type session: motor.motor_asyncio.AsyncIOMotorClientSession
+    :ivar cache: Redis client.
+    :type cache: redis.asyncio.Redis
     """
-    engine = Engine
-    client = from_url(config.redis_url)
+    cache = from_url(config.redis_url)
+
+    # ---------------------------------------------------------
+    #
+    def __init__(self, session: AsyncIOMotorClientSession):
+        """ Implicit constructor.
+
+        :param session: MongoDb database async client session.
+        """
+        self.session = session
 
     # ---------------------------------------------------------
     #
@@ -54,7 +62,7 @@ class MongoRepository:
         :param key: Index key.
         :return: Found Order.
         """
-        response = await self.engine.db.orders.find_one({"_id": str(key)})
+        response = await self.session.client.api_db.orders.find_one({"_id": str(key)})
 
         return OrderModel.from_mongo(response) if response else None
 
@@ -67,8 +75,8 @@ class MongoRepository:
         :return: DB update result.
         """
         base = OrderUpdateModel(**payload.model_dump()).to_mongo()
-        response = await self.engine.db.orders.update_one({"_id": str(payload.id)},
-                                                          {"$set": {**base}})
+        response = await self.session.client.api_db.orders.update_one({"_id": str(payload.id)},
+                                                                      {"$set": {**base}})
 
         return response.raw_result['updatedExisting']
 
@@ -80,7 +88,7 @@ class MongoRepository:
         :param payload: New Order payload.
         :return: DB create response.
         """
-        response = await self.engine.db.orders.insert_one(payload.to_mongo())
+        response = await self.session.client.api_db.orders.insert_one(payload.to_mongo())
 
         return response.acknowledged
 
@@ -95,7 +103,7 @@ class MongoRepository:
         """
         result = []
 
-        async for item in self.engine.db.orders.find({}).sort('created', DESCENDING):
+        async for item in self.session.client.api_db.orders.find({}).sort('created', DESCENDING):
             result.append(OrderModel.from_mongo(item))
 
         return result
@@ -111,7 +119,7 @@ class MongoRepository:
         :param key: Index key.
         :return: Found Order.
         """
-        value = await self.client.get(str(key))
+        value = await self.cache.get(str(key))
 
         if not value:
             payload = await self._read(key)
@@ -120,7 +128,7 @@ class MongoRepository:
                 return None
 
             value = ujson.dumps(dict_of(payload))
-            await self.client.set(str(key), value, ex=EXPIRE)
+            await self.cache.set(str(key), value, ex=EXPIRE)
 
         return OrderModel(**ujson.loads(value))
 
@@ -136,7 +144,7 @@ class MongoRepository:
 
         if response:
             value = ujson.dumps(dict_of(payload))
-            await self.client.set(str(payload.id), value, ex=EXPIRE)
+            await self.cache.set(str(payload.id), value, ex=EXPIRE)
 
         return response
 
@@ -150,9 +158,9 @@ class MongoRepository:
         :param key: Index key.
         :return: DB delete result.
         """
-        response = await self.engine.db.orders.delete_one({"_id": str(key)})
+        response = await self.session.client.api_db.orders.delete_one({"_id": str(key)})
 
         if response.deleted_count == 1:
-            await self.client.delete(str(key))
+            await self.cache.delete(str(key))
 
         return response.deleted_count > 0

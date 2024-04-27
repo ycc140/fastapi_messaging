@@ -7,11 +7,13 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-19 11:40:10
-     $Rev: 7
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
+import os
+import signal
 import asyncio
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -25,12 +27,16 @@ from ..core.setup import config
 from ..repository.db import Engine
 from .api import api, health_route
 from .api.models import ValidStatus
-from ..repository import orders_repository
+from .order_event_adapter import OrderEventAdapter
+from ..repository import get_order_response_repository
 from ..tools.rabbit_client import RabbitClient
 from ..tools.custom_logging import create_unified_logger
-from ..business.response_handler import OrderResponseLogic
 from .api.documentation import (servers, license_info,
                                 tags_metadata, description)
+
+# Constants
+HDR_DATA = {'Content-Type': 'application/json',
+            'X-API-Key': f'{config.service_api_key}'}
 
 
 # ---------------------------------------------------------
@@ -94,8 +100,9 @@ class Service(FastAPI):
             # Verify that message status is valid.
             ValidStatus(status=message.get('status'))
 
-            worker = OrderResponseLogic(repository=orders_repository)
-            await asyncio.create_task(worker.process_response(message))
+            repo = await get_order_response_repository()
+            worker = OrderEventAdapter(repository=repo)
+            await worker.process_payment_response(message)
 
         except RuntimeError as why:
             self.logger.error(f'{why}')
@@ -122,7 +129,13 @@ async def lifespan(service: Service):
         yield
 
     except BaseException as why:
-        service.logger.critical(f'RabbitMQ server is unreachable: {why.args[1]}.')
+        service.logger.critical(f'MongoDB/RabbitMQ server is unreachable: {why.args[1]}.')
+
+        # Needed for the log to be visible.
+        await asyncio.sleep(0.1)
+
+        # Stop the program since it's no point to continue.
+        os.kill(os.getpid(), signal.SIGTERM)
 
     finally:
         await shutdown(service)
@@ -151,12 +164,12 @@ async def startup(service: Service):
     :param service: FastAPI service instance.
     """
 
+    service.logger.info('Establishing MongoDB connection...')
+    await Engine.create_db_connection()
+
     service.logger.info('Establishing RabbitMQ message queue consumer...')
     await service.rabbit_client.start()
     await asyncio.create_task(service.rabbit_client.start_subscription())
-
-    service.logger.info('Establishing MongoDB connection...')
-    await Engine.create_db_connection()
 
 
 # ---------------------------------------------------------

@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # Third party modules
@@ -56,7 +56,7 @@ class UrlServiceCache:
         value = await self.client.get(key)
 
         if not value:
-            value = await Engine.db.service_urls.find_one({"_id": key})
+            value = await Engine.client.api_db.service_urls.find_one({"_id": key})
             await self.client.set(key, value['url'], ex=EXPIRE)
 
         return value.decode() if isinstance(value, bytes) else value['url']

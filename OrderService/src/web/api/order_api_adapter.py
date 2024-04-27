@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -20,17 +20,19 @@ from fastapi import HTTPException
 
 # Local modules
 from ...repository.models import OrderModel
+from ...business.models import PaymentResponse
 from ...repository.interface import IRepository
 from .models import OrderResponse, OrderPayload
 from ...business.request_handler import OrderApiLogic
+from ...business.response_handler import OrderPaymentResponseLogic
 
 
 # ------------------------------------------------------------------------
 #
-class OrdersApi:
-    """ This class implements the web API layer adapter.
+class OrderApiAdapter:
+    """ This class is the Order primary adapter API implementation.
 
-    :ivar repo: Current repository instance
+    :ivar repo: The order repository object.
     :type repo: `IRepository`
     """
 
@@ -39,7 +41,7 @@ class OrdersApi:
     def __init__(self, repository: IRepository):
         """ The class initializer.
 
-        :param repository: Data layer handler object.
+        :param repository: The order repository object.
         """
         self.repo = repository
 
@@ -123,3 +125,15 @@ class OrdersApi:
         db_order = await self._order_of(order_id)
         order = OrderApiLogic(repository=self.repo, **db_order.model_dump())
         await order.delete()
+
+    # ---------------------------------------------------------
+    #
+    async def handle_order_payment_response(self, payload: PaymentResponse) -> str:
+        """ Create a new order in DB and make a payment request.
+
+        :param payload: Order Payment Response request.
+        :return: OK
+        """
+        order = OrderPaymentResponseLogic(repository=self.repo)
+        await order.process_response(payload.model_dump())
+        return 'OK'

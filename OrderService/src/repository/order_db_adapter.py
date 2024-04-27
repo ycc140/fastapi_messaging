@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-19 11:40:10
-     $Rev: 7
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -22,11 +22,13 @@ from .interface import IRepository
 
 # ------------------------------------------------------------------------
 #
-class OrdersRepository:
-    """ This class defines the OrderService data layer adapter (the CRUD operations).
+class OrderDbAdapter:
+    """
+    This class implements the OrderService secondary adapter database
+    implementation (the CRUD operations).
 
-    It is implemented using the Repository pattern and is using the Dependency
-    Inversion Principle.
+    It is implemented using the Repository pattern and is using
+    the Dependency Inversion Principle.
 
     :ivar repository: Current repository instance
     :type repository: `IRepository`

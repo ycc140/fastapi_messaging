@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -21,9 +21,9 @@ from datetime import datetime, UTC
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Local modules
-from .documentation import payment_documentation as pay_doc
-from ..web.api.documentation import (metadata_example,
-                                     metadata_documentation as meta_doc)
+from .documentation import (metadata_example,
+                            payment_documentation as pay_doc,
+                            metadata_documentation as meta_doc)
 
 
 # ---------------------------------------------------------

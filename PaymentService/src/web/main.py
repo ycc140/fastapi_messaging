@@ -7,9 +7,14 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
+
+# BUILTIN modules
+import os
+import signal
+import asyncio
 
 # BUILTIN modules
 from pathlib import Path
@@ -79,7 +84,13 @@ async def lifespan(service: Service):
         yield
 
     except BaseException as why:
-        service.logger.critical(f'RabbitMQ server is unreachable: {why.args[1]}.')
+        service.logger.critical(f'MongoDB/RabbitMQ server is unreachable: {why.args[1]}.')
+
+        # Needed for the log to be visible.
+        await asyncio.sleep(0.1)
+
+        # Stop the program since it's no point to continue.
+        os.kill(os.getpid(), signal.SIGTERM)
 
     finally:
         await shutdown(service)
@@ -107,11 +118,11 @@ async def startup(service: Service):
     :param service: FastAPI service instance.
     """
 
-    service.logger.info('Establishing RabbitMQ connection..')
-    await service.rabbit_client.start()
-
     service.logger.info('Establishing MongoDB connection...')
     await Engine.create_db_connection()
+
+    service.logger.info('Establishing RabbitMQ connection..')
+    await service.rabbit_client.start()
 
 
 # ---------------------------------------------------------

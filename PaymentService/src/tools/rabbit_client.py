@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -18,7 +18,7 @@ from typing import Callable, Optional, Any
 # Third party modules
 import ujson as json
 from aio_pika.exceptions import AMQPConnectionError
-from aio_pika import (DeliveryMode, connect_robust,
+from aio_pika import (DeliveryMode, connect_robust, RobustChannel,
                       RobustConnection, IncomingMessage, Message)
 
 
@@ -31,12 +31,12 @@ class RabbitClient:
     good horizontal message scaling when needed.
 
     :ivar channel: RabbitMQ's connection channel object instance.
-    :type channel: ``aio_pika.AbstractChannel``
+    :type channel: ``aio_pika.RobustChannel``
     :ivar rabbit_url: RabbitMQ's connection URL.
     :ivar service_name: Name of message subscription queue.
     :ivar message_handler: Received message callback method.
     :ivar connection: RabbitMQ's connection object instance.
-    :type connection: ``aio_pika.AbstractRobustConnection``
+    :type connection: ``aio_pika.RobustConnection``
     """
 
     # ---------------------------------------------------------
@@ -49,10 +49,10 @@ class RabbitClient:
         :param service: Name of message subscription queue.
         :param incoming_message_handler: Received message callback method.
         """
-        self.channel = None
-        self.connection = None
-        self.rabbit_url = rabbit_url
         self.service_name = service
+        self.rabbit_url = rabbit_url
+        self.channel: RobustChannel = None
+        self.connection: RobustConnection = None
         self.message_handler = incoming_message_handler
 
     # ---------------------------------------------------------
@@ -75,6 +75,8 @@ class RabbitClient:
         :param _: Not used.
         :param __: Not used.
         """
+        self.channel = None
+        self.connection = None
         self.connection_lost = None
 
     # ---------------------------------------------------------

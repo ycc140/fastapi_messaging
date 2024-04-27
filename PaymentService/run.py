@@ -8,8 +8,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # Third party modules
@@ -20,7 +20,11 @@ import ujson as json
 from src.web.main import app
 from src.core.setup import config
 
-if __name__ == "__main__":
+
+# ---------------------------------------------------------
+#
+def main():
+    """ Start uvicorn program. """
     # As soon as the SSL certificates are added, the shutdown period is
     # 30 seconds, unless the "timeout_graceful_shutdown" below is used.
     uv_config = {'log_level': config.service_log_level,
@@ -38,3 +42,7 @@ if __name__ == "__main__":
     app.logger.trace(f'config: {json.dumps(config.model_dump(), indent=2)}')
 
     uvicorn.run(**uv_config)
+
+
+if __name__ == "__main__":
+    main()

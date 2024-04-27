@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 06:17:52
-     $Rev: 5
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -22,7 +22,7 @@ from .models import OrderModel
 # -----------------------------------------------------------------------------
 #
 class IRepository(Protocol):
-    """ DB Interface class. """
+    """ Order DB Interface class. """
 
     async def create(self, payload: OrderModel) -> bool:
         """ Create Payment.
@@ -30,7 +30,6 @@ class IRepository(Protocol):
         :param payload: New Payment payload.
         :return: DB create response.
         """
-        ...
 
     async def read_all(self) -> List[OrderModel]:
         """ Read all existing Orders.
@@ -39,7 +38,6 @@ class IRepository(Protocol):
 
         :return: List of found Orders.
         """
-        ...
 
     async def read(self, key: UUID) -> OrderModel:
         """ Read Order for a matching index key.
@@ -47,7 +45,6 @@ class IRepository(Protocol):
         :param key: Index key.
         :return: Found Order.
         """
-        ...
 
     async def update(self, payload: OrderModel) -> bool:
         """ Update Order.
@@ -55,7 +52,6 @@ class IRepository(Protocol):
         :param payload: Updated Order payload.
         :return: DB update result.
         """
-        ...
 
     async def delete(self, key: UUID) -> bool:
         """
@@ -65,4 +61,3 @@ class IRepository(Protocol):
         :param key: Index key.
         :return: DB delete result.
         """
-        ...

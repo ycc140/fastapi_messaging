@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -27,12 +27,13 @@ from ..core.setup import config
 # ---------------------------------------------------------
 #
 class InterceptHandler(logging.Handler):
-    """ Logs to loguru from Python logging module. """
+    """ Send logs to loguru logging from Python logging module. """
 
     def emit(self, record: logging.LogRecord):
-        """ Emit log record.
+        """ Move the specified logging record to loguru.
 
-        :param record: Current logging record.
+        Args:
+            record: Original python log record.
         """
         try:
             level = logger.level(record.levelname).name
@@ -40,9 +41,9 @@ class InterceptHandler(logging.Handler):
         except ValueError:
             level = str(record.levelno)
 
-        frame, depth = logging.currentframe(), 2
+        frame, depth = logging.currentframe(), 0
 
-        while frame.f_code.co_filename == logging.__file__:
+        while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
             frame = cast(FrameType, frame.f_back)
             depth += 1
 
@@ -79,7 +80,7 @@ def create_unified_logger() -> logger:
 
     # Prepare to incorporate python standard logging.
     seen = set()
-    logging.basicConfig(handlers=[InterceptHandler()], level=0)
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
     for logger_name in logging.root.manager.loggerDict.keys():
 

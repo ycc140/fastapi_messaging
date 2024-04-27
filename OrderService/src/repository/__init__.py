@@ -7,14 +7,43 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-19 11:40:10
-     $Rev: 7
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
+# Third party modules
+from fastapi import Depends
+
 # Local modules
+from .order_db_adapter import OrderDbAdapter
 from .mongo_repository import MongoRepository
-from .order_data_adapter import OrdersRepository
+from .db import Engine, AsyncIOMotorClientSession
 
 
-orders_repository = OrdersRepository(MongoRepository())
-""" Repository injected with MongoDB implementation. """
+# ---------------------------------------------------------
+#
+async def get_order_api_repository(
+        session: AsyncIOMotorClientSession = Depends(Engine.get_async_session)
+) -> OrderDbAdapter:
+    """ Return an Order DB adapter object with an active session.
+
+    This call is used by API endpoints where Depends Dependency
+    Injections are used.
+
+    :param session: Active database session.
+    :return: An Order DB adapter object with an active session.
+    """
+    return OrderDbAdapter(MongoRepository(session))
+
+
+# ---------------------------------------------------------
+#
+async def get_order_response_repository() -> OrderDbAdapter:
+    """ Return an Order CRUD operation instance with an active DB session.
+
+    This call is used for Payment response messages.
+
+    :return: An Order DB adapter object with an active session.
+    """
+    session = await Engine.client.start_session()
+    return OrderDbAdapter(MongoRepository(session))

@@ -7,29 +7,27 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # Third party modules
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from loguru import logger
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorClientSession
 
 # Local program modules
 from ..core.setup import config
 
 
-# ---------------------------------------------------------
+# -----------------------------------------------------------------------------
 #
 class Engine:
     """ MongoDb database async engine class.
 
-    :ivar db: AsyncIOMotorDatabase class instance.
-    :type db: AsyncIOMotorDatabase
-    :ivar connection: AsyncIOMotorClient class instance.
-    :type connection: AsyncIOMotorClient
+    :ivar client: MongoDB motor async client object.
+    :type client: AsyncIOMotorClient
     """
-    db: AsyncIOMotorDatabase = None
-    connection: AsyncIOMotorClient = None
+    client: AsyncIOMotorClient = None
 
     # ---------------------------------------------------------
     #
@@ -39,22 +37,39 @@ class Engine:
 
         Setting server connection timeout to 5 (default is 30) seconds.
         """
-        cls.connection = AsyncIOMotorClient(config.mongo_url,
-                                            uuidRepresentation='standard',
-                                            serverSelectionTimeoutMS=5000)
-        cls.db = cls.connection.api_db
+        cls.client = AsyncIOMotorClient(config.mongo_url,
+                                        uuidRepresentation='standard',
+                                        serverSelectionTimeoutMS=5000)
 
     # ---------------------------------------------------------
     #
     @classmethod
     async def close_db_connection(cls):
         """ Close MongoDB connection. """
-        if cls.connection:
-            cls.connection.close()
+        if cls.client:
+            cls.client.close()
 
     # ---------------------------------------------------------
     #
     @classmethod
     async def is_db_connected(cls) -> bool:
         """ Return MongoDB connection status. """
-        return bool(cls.connection.server_info())
+        return bool(cls.client.server_info())
+
+    # ---------------------------------------------------------
+    #
+    @classmethod
+    async def get_async_session(cls) -> AsyncIOMotorClientSession:
+        """ Return an active database session object from the pool.
+
+        Note that this is a DB session generator.
+
+        Returns:
+            An active DB session.
+        """
+        try:
+            async with await cls.client.start_session() as session:
+                yield session
+
+        except BaseException as why:
+            logger.critical(f'MongoDB server is unreachable: {why.args[1]}.')

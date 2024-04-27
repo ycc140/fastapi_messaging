@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -23,8 +23,8 @@ from pydantic import (BaseModel, Field, PositiveFloat,
 # Local modules
 from ...repository.models import Status, MetadataSchema
 from .documentation import (health_example, billing_example,
-                            metadata_documentation as meta_doc,
                             callback_documentation as callback)
+from ...repository.documentation import metadata_documentation as meta_doc
 
 
 # ---------------------------------------------------------

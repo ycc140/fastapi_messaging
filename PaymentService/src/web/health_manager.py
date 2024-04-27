@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -41,16 +41,7 @@ CERT_EXPIRE_FILE = (
 class HealthManager:
     """
     This class handles PaymentService health status reporting on used resources.
-
-    :ivar cache: Redis client.
-    :type cache: `UrlServiceCache`
     """
-
-    # ---------------------------------------------------------
-    #
-    def __init__(self):
-        """ The class initializer. """
-        self.cache = UrlServiceCache(config.redis_url)
 
     # ---------------------------------------------------------
     #
@@ -110,26 +101,31 @@ class HealthManager:
         :return: Service connection status.
         """
         result = []
+        cache = UrlServiceCache(config.redis_url)
 
-        async with AsyncClient(verify=SSL_CONTEXT,
-                               timeout=(1.0, 5.0)) as client:
-            for service in URLS:
-                try:
-                    root = await self.cache.get(service)
-                    url = f'{root}/health'
-                    status = False
+        try:
+            async with AsyncClient(verify=SSL_CONTEXT,
+                                   timeout=(1.0, 5.0)) as client:
+                for service in URLS:
+                    try:
+                        root = await cache.get(service)
+                        url = f'{root}/health'
+                        status = False
 
-                    # Request used Microservice health status.
-                    response = await client.get(url=url)
+                        # Request used Microservice health status.
+                        response = await client.get(url=url)
 
-                    if response.status_code == 200:
-                        status = response.json()['status']
+                        if response.status_code == 200:
+                            status = response.json()['status']
 
-                except ConnectTimeout:
-                    logger.critical(f'No connection with '
-                                    f'{service} on URL {url}')
+                    except ConnectTimeout:
+                        logger.critical(f'No connection with '
+                                        f'{service} on URL {url}')
 
-                result.append(HealthResourceModel(name=service, status=status))
+                    result.append(HealthResourceModel(name=service, status=status))
+
+        finally:
+            await cache.close()
 
         return result
 
@@ -146,9 +142,6 @@ class HealthManager:
         resource_items += await self._get_mongo_status()
         resource_items += await self._get_service_status()
         total_status = all(key.status for key in resource_items)
-
-        # Explicit close is needed.
-        await self.cache.close()
 
         return HealthResponseModel(status=total_status,
                                    version=config.version,

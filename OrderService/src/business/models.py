@@ -7,19 +7,20 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-24 19:33:51
-     $Rev: 72
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
-
 # BUILTIN modules
 from uuid import UUID
 from typing import Any
 
 # Third party modules
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Local modules
 from ..repository.models import OrderItems, Status
+from .documentation import (metadata_example,
+                            metadata_documentation as meta_doc)
 
 
 # ---------------------------------------------------------
@@ -27,13 +28,16 @@ from ..repository.models import OrderItems, Status
 class MetadataSchema(BaseModel):
     """ Representation of Order metadata in the system.
 
+    :ivar model_config: Current model config items.
     :ivar receiver: Callback receiver.
     :ivar order_id: Order identity.
     :ivar customer_id: Customer identity.
     """
-    receiver: str
-    order_id: str
-    customer_id: str
+    model_config = ConfigDict(json_schema_extra={"example": metadata_example})
+
+    receiver: str = Field(**meta_doc['receiver'])
+    order_id: str = Field(**meta_doc['order_id'])
+    customer_id: str = Field(**meta_doc['customer_id'])
 
     @field_validator('*', mode='before')
     @classmethod

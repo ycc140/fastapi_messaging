@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-19 11:40:10
-     $Rev: 7
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -28,7 +28,7 @@ from ..repository.models import Status, OrderModel, StateUpdateSchema
 
 # ------------------------------------------------------------------------
 #
-class OrderResponseLogic:
+class OrderPaymentResponseLogic:
     """
     This class implements the OrderService business logic layer
     for RabbitMQ response messages.
@@ -56,11 +56,11 @@ class OrderResponseLogic:
         successful = await self.repo.update(order)
 
         if not successful:
-            errmsg = f"Failed updating {order.id=} in api_db.orders"
+            errmsg = f"Failed updating order '{order.id}' in api_db.orders"
             raise RuntimeError(errmsg)
 
         log = getattr(logger, ('error' if order.status == 'paymentFailed' else 'info'))
-        log(f'Stored {order.status=} in DB for {order.id=}.')
+        log(f"Stored status '{order.status.value}' in DB for order '{order.id}'.")
 
     # ---------------------------------------------------------
     #
@@ -87,7 +87,7 @@ class OrderResponseLogic:
                 raise RuntimeError(errmsg)
 
             payload = DeliveryPayload(metadata=message['metadata'],
-                                      address=resp.json(), **order.model_dump())
+                                      address=resp.json(), items=order.items)
 
             service = 'DeliveryService'
             root = await cache.get(service)
@@ -104,8 +104,7 @@ class OrderResponseLogic:
                 raise RuntimeError(errmsg)
 
             data = resp.json()
-            order.status = data['status']
-            order.delivery_id = data['delivery_id']
+            order.delivery_id = UUID(data['delivery_id'])
             order.updated.append(StateUpdateSchema(status=order.status))
             await self._update_order_in_db(order)
 
@@ -142,8 +141,7 @@ class OrderResponseLogic:
                 raise RuntimeError(errmsg)
 
             data = resp.json()
-            order.status = data['status']
-            order.kitchen_id = data['kitchen_id']
+            order.kitchen_id = UUID(data['kitchen_id'])
             order.updated.append(StateUpdateSchema(status=order.status))
             await self._update_order_in_db(order)
 
@@ -168,7 +166,7 @@ class OrderResponseLogic:
 
         :param message: Response message data.
         """
-        status = message['status']
+        status = Status(message['status'])
         order_id = UUID(message['metadata']['order_id'])
 
         try:
@@ -176,7 +174,7 @@ class OrderResponseLogic:
             order = await self.repo.read(order_id)
 
             if not order:
-                raise RuntimeError(f'{order_id=} is unknown')
+                raise RuntimeError(f"Order '{order_id}' not found in api_db.orders.")
 
             order.status = status
             order.updated.append(StateUpdateSchema(status=order.status))

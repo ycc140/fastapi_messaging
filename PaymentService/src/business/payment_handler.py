@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # BUILTIN modules
@@ -42,23 +42,18 @@ class PaymentLogic:
 
     :ivar repo: DB repository.
     :type repo: `IRepository`
-    :ivar cache: Redis client.
-    :type cache: `UrlServiceCache`
     :ivar rabbit_client: RabbitMQ client.
     :type rabbit_client: `RabbitClient`
     """
 
     # ---------------------------------------------------------
     #
-    def __init__(self, repository: IRepository,
-                 cache: UrlServiceCache, client: RabbitClient):
+    def __init__(self, repository: IRepository, client: RabbitClient):
         """ The class initializer.
 
         :param repository: Data layer handler object.
-        :param cache: Redis URL cache.
         :param client: RabbitMQ client.
         """
-        self.cache = cache
         self.repo = repository
         self.rabbit_client = client
 
@@ -131,10 +126,11 @@ class PaymentLogic:
         :raise HTTPException [500]: When connection with CustomerService failed.
         """
         url = None
+        cache = UrlServiceCache(config.redis_url)
 
         try:
             meta = payload.metadata
-            root = await self.cache.get('CustomerService')
+            root = await cache.get('CustomerService')
             items = [item.dict() for item in payload.items]
 
             # Get Customer Credit Card information.
@@ -173,7 +169,7 @@ class PaymentLogic:
             raise HTTPException(status_code=500, detail=f'{why}')
 
         finally:
-            await self.cache.close()
+            await cache.close()
 
     # ---------------------------------------------------------
     #
@@ -191,10 +187,11 @@ class PaymentLogic:
         :raise HTTPException [500]: When connection with CustomerService failed.
         """
         url = None
+        cache = UrlServiceCache(config.redis_url)
 
         try:
             meta = payload.metadata
-            root = await self.cache.get('CustomerService')
+            root = await cache.get('CustomerService')
             items = [item.dict() for item in payload.items]
 
             # Get Customer Credit Card information.
@@ -227,7 +224,7 @@ class PaymentLogic:
             raise HTTPException(status_code=500, detail=f'{why}')
 
         finally:
-            await self.cache.close()
+            await cache.close()
 
     # ---------------------------------------------------------
     #
@@ -264,7 +261,7 @@ class PaymentLogic:
                                                      queue=payment.metadata.receiver)
 
             logger.info(f"Sent Payment response to {payment.metadata.receiver} "
-                        f"with status '{payload.status}' for Order '{payload.caller_id}'.")
+                        f"with status '{payload.status.value}' for Order '{payload.caller_id}'.")
 
             return payload
 

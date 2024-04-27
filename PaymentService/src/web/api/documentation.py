@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-19 11:40:10
-     $Rev: 7
+    $Date: 2024-04-27 21:26:58
+     $Rev: 8
 """
 
 # Local modules
@@ -48,23 +48,6 @@ billing_example = {
     "Expiry": "07/2030",
 }
 """ OpenAPI CreditCardSchema example documentation. """
-
-metadata_example = {
-    "receiver": "OrderService",
-    "order_id": 'b76d019f-5937-4a14-8091-1d9f18666c93',
-    "customer_id": 'f2861560-e9ed-4463-955f-0c55c3b416fb',
-}
-""" OpenAPI MetadataSchema example documentation. """
-
-metadata_documentation = {
-    "receiver": {'example': 'OrderService',
-                 'description': 'Requesting service.'},
-    "order_id": {'example': 'b76d019f-5937-4a14-8091-1d9f18666c93',
-                 'description': 'Order ID of the Order currently being handled.'},
-    "customer_id": {'example': 'f2861560-e9ed-4463-955f-0c55c3b416fb',
-                    'description': 'Customer ID for the Order currently being handled.'},
-}
-""" OpenAPI MetadataSchema parameters documentation. """
 
 callback_documentation = {
     "status": {'example': 'paymentPaid',
