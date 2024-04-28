@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-28 15:32:32
+     $Rev: 10
 """
 
 # Third party modules
@@ -39,7 +39,7 @@ async def get_order_api_repository(
 # ---------------------------------------------------------
 #
 async def get_order_response_repository() -> OrderDbAdapter:
-    """ Return an Order CRUD operation instance with an active DB session.
+    """ Return an Order DB adapter object with an active session.
 
     This call is used for Payment response messages.
 
