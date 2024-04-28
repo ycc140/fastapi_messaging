@@ -7,12 +7,14 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-28 15:22:00
+     $Rev: 9
 """
 
+from typing import Optional
+
 # Local modules
-from ...tools.rabbit_client import RabbitClient
+from ...broker.interface import IBroker
 from ...repository.interface import IRepository
 from ...business.payment_handler import PaymentLogic
 from .models import BillingCallback, PaymentPayload
@@ -23,20 +25,22 @@ from .models import BillingCallback, PaymentPayload
 class PaymentApiAdapter:
     """ This class is the PaymentService primary adapter API implementation.
 
+    :ivar broker: The order broker object.
+    :type broker: `IBroker`
     :ivar repo: The order repository object.
     :type repo: `IRepository`
     """
 
     # ---------------------------------------------------------
     #
-    def __init__(self, repository: IRepository, client: RabbitClient):
+    def __init__(self, repository: IRepository, broker: Optional[IBroker] = None):
         """ The class initializer.
 
+        :param broker: Broker layer handler object.
         :param repository: Data layer handler object.
-        :param client: RabbitMQ client.
         """
+        self.broker = broker
         self.repo = repository
-        self.rabbit_client = client
 
     # ---------------------------------------------------------
     #
@@ -53,7 +57,7 @@ class PaymentApiAdapter:
         :raise HTTPException [400]: When HTTP POST response != 201 or 202.
         :raise HTTPException [500]: When connection with CustomerService failed.
         """
-        payment = PaymentLogic(self.repo, self.rabbit_client)
+        payment = PaymentLogic(self.repo, self.broker)
         return await payment.process_payment_request(payload)
 
     # ---------------------------------------------------------
@@ -71,7 +75,7 @@ class PaymentApiAdapter:
         :raise HTTPException [400]: When HTTP POST response != 201 or 202.
         :raise HTTPException [500]: When connection with CustomerService failed.
         """
-        payment = PaymentLogic(self.repo, self.rabbit_client)
+        payment = PaymentLogic(self.repo, self.broker)
         return await payment.process_reimbursement_request(payload)
 
     # ---------------------------------------------------------
@@ -88,5 +92,5 @@ class PaymentApiAdapter:
         :return: Received payload.
         :raise HTTPException [404]: When caller_id does not exist in DB.
         """
-        payment = PaymentLogic(self.repo, self.rabbit_client)
+        payment = PaymentLogic(self.repo, self.broker)
         return await payment.process_response(payload)

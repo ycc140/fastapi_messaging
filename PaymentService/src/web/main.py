@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-28 15:22:00
+     $Rev: 9
 """
 
 # BUILTIN modules
@@ -28,7 +28,6 @@ from fastapi.staticfiles import StaticFiles
 from ..core.setup import config
 from .api import api, health_route
 from ..repository.db import Engine
-from ..tools.rabbit_client import RabbitClient
 from ..tools.custom_logging import create_unified_logger
 from .api.documentation import (servers, license_info,
                                 tags_metadata, description)
@@ -45,8 +44,6 @@ class Service(FastAPI):
       - Instantiates a RabbitMQ client.
       - Defines a static path for images in the documentation.
 
-    :ivar rabbit_client: RabbitMQ client.
-    :type rabbit_client: `RabbitClient`
     :ivar logger: Unified loguru logger object.
     :type logger: loguru.logger
     """
@@ -62,8 +59,6 @@ class Service(FastAPI):
         # Needed for OpenAPI Markdown images to be displayed.
         static_path = Path(__file__).parent.parent.parent.parent / 'design_docs'
         self.mount("/static", StaticFiles(directory=static_path))
-
-        self.rabbit_client = RabbitClient(config.rabbit_url)
 
         self.include_router(api.ROUTER)
         self.include_router(health_route.ROUTER)
@@ -117,12 +112,8 @@ async def startup(service: Service):
 
     :param service: FastAPI service instance.
     """
-
     service.logger.info('Establishing MongoDB connection...')
     await Engine.create_db_connection()
-
-    service.logger.info('Establishing RabbitMQ connection..')
-    await service.rabbit_client.start()
 
 
 # ---------------------------------------------------------
@@ -132,10 +123,5 @@ async def shutdown(service: Service):
 
     :param service: FastAPI service instance.
     """
-
-    if service.rabbit_client.is_connected:
-        service.logger.info('Disconnecting from RabbitMQ...')
-        await service.rabbit_client.stop()
-
     service.logger.info('Disconnecting from MongoDB...')
     await Engine.close_db_connection()

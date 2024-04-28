@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-28 15:22:00
+     $Rev: 9
 """
 
 # BUILTIN modules
@@ -45,8 +45,6 @@ class HealthManager:
 
     :ivar rabbit_client: RabbitMQ client.
     :type rabbit_client: `RabbitClient`
-    :ivar cache: Redis client.
-    :type cache: `UrlServiceCache`
     """
 
     # ---------------------------------------------------------
@@ -93,7 +91,7 @@ class HealthManager:
     # ---------------------------------------------------------
     #
     @staticmethod
-    async def _get_mongo_status() -> List[HealthResourceModel]:
+    async def _get_repo_status() -> List[HealthResourceModel]:
         """ Return MongoDb connection status.
 
         :return: MongoDb connection status.
@@ -109,7 +107,7 @@ class HealthManager:
 
     # ---------------------------------------------------------
     #
-    async def _get_rabbit_status(self) -> List[HealthResourceModel]:
+    async def _get_broker_status(self) -> List[HealthResourceModel]:
         """ Return RabbitMQ connection status.
 
         :return: RabbitMQ connection status.
@@ -119,7 +117,8 @@ class HealthManager:
 
     # ---------------------------------------------------------
     #
-    async def _get_service_status(self) -> List[HealthResourceModel]:
+    @staticmethod
+    async def _get_service_status() -> List[HealthResourceModel]:
         """ Return RabbitMQ connection status.
 
         :return: Service connection status.
@@ -163,8 +162,8 @@ class HealthManager:
         resource_items = []
         days = await self._get_cert_remaining_days()
         resource_items += self._get_cert_status(days)
-        resource_items += await self._get_mongo_status()
-        resource_items += await self._get_rabbit_status()
+        resource_items += await self._get_repo_status()
+        resource_items += await self._get_broker_status()
         resource_items += await self._get_service_status()
         total_status = all(key.status for key in resource_items)
 

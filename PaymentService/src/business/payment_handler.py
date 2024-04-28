@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-28 15:22:00
+     $Rev: 9
 """
 
 # BUILTIN modules
@@ -23,9 +23,9 @@ from httpx import AsyncClient, ConnectError, ConnectTimeout
 
 # Local modules
 from .models import PaymentResponse
+from ..broker.interface import IBroker
 from ..repository.models import PaymentModel
 from ..core.setup import config, SSL_CONTEXT
-from ..tools.rabbit_client import RabbitClient
 from ..repository.interface import IRepository
 from ..repository.url_cache import UrlServiceCache
 from ..web.api.models import BillingCallback, BillingPayload, PaymentPayload
@@ -42,20 +42,20 @@ class PaymentLogic:
 
     :ivar repo: DB repository.
     :type repo: `IRepository`
-    :ivar rabbit_client: RabbitMQ client.
-    :type rabbit_client: `RabbitClient`
+    :ivar broker: RabbitMQ client.
+    :type broker: `RabbitClient`
     """
 
     # ---------------------------------------------------------
     #
-    def __init__(self, repository: IRepository, client: RabbitClient):
+    def __init__(self, repository: IRepository, broker: IBroker):
         """ The class initializer.
 
-        :param repository: Data layer handler object.
-        :param client: RabbitMQ client.
+        :param broker: Broker layer handler object.
+        :param repository: Repository layer handler object.
         """
+        self.broker = broker
         self.repo = repository
-        self.rabbit_client = client
 
     # ---------------------------------------------------------
     #
@@ -131,7 +131,7 @@ class PaymentLogic:
         try:
             meta = payload.metadata
             root = await cache.get('CustomerService')
-            items = [item.dict() for item in payload.items]
+            items = [item.model_dump() for item in payload.items]
 
             # Get Customer Credit Card information.
             async with AsyncClient(verify=SSL_CONTEXT) as client:
@@ -234,7 +234,7 @@ class PaymentLogic:
          Implemented logic:
            - Extract payment Order from DB using payload caller_id.
            - Store updated billing data in a DB collection api_db.payments.
-           - Send the billing response to the metadata requester using RabbitMQ.
+           - Send the billing response to the metadata requester using message broker.
 
         :param payload: Payment callback response data.
         :return: Received payload.
@@ -256,9 +256,8 @@ class PaymentLogic:
             await self.repo.update(payment)
 
             # Send a response message to requester.
-            await self.rabbit_client.start()
-            await self.rabbit_client.publish_message(message=response.model_dump(),
-                                                     queue=payment.metadata.receiver)
+            await self.broker.publish(message=response.model_dump(),
+                                      queue=payment.metadata.receiver)
 
             logger.info(f"Sent Payment response to {payment.metadata.receiver} "
                         f"with status '{payload.status.value}' for Order '{payload.caller_id}'.")
@@ -268,7 +267,3 @@ class PaymentLogic:
         except RuntimeError as why:
             logger.error(f'{why}')
             raise HTTPException(status_code=404, detail=f'{why}')
-
-        finally:
-            if self.rabbit_client.is_connected:
-                await self.rabbit_client.stop()
