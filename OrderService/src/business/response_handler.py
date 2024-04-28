@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-28 20:01:36
+     $Rev: 12
 """
 
 # BUILTIN modules
@@ -82,8 +82,8 @@ class OrderPaymentResponseLogic:
                 resp = await client.get(url=url, timeout=config.url_timeout)
 
             if resp.status_code != 200:
-                errmsg = f"Failed {service} POST request for URL {url} - " \
-                         f"[{resp.status_code}: {resp.json()['detail']}]."
+                errmsg = (f"Failed {service} POST request for URL {url} - "
+                          f"[{resp.status_code}: {resp.json()['detail']}].")
                 raise RuntimeError(errmsg)
 
             payload = DeliveryPayload(metadata=message['metadata'],
@@ -99,8 +99,8 @@ class OrderPaymentResponseLogic:
                                          timeout=config.url_timeout)
 
             if resp.status_code != 202:
-                errmsg = f"Failed {service} POST request for URL {url} - " \
-                         f"[{resp.status_code}: {resp.json()['detail']}]."
+                errmsg = (f"Failed {service} POST request for URL {url} - "
+                          f"[{resp.status_code}: {resp.json()['detail']}].")
                 raise RuntimeError(errmsg)
 
             data = resp.json()
@@ -136,8 +136,8 @@ class OrderPaymentResponseLogic:
                                          timeout=config.url_timeout)
 
             if resp.status_code != 202:
-                errmsg = f"Failed KitchenService POST request for URL {url} " \
-                         f"- [{resp.status_code}: {resp.json()['detail']}]."
+                errmsg = (f"Failed KitchenService POST request for URL {url} "
+                          f"- [{resp.status_code}: {resp.json()['detail']}].")
                 raise RuntimeError(errmsg)
 
             data = resp.json()

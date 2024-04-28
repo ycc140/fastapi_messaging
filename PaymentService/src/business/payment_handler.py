@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-28 15:22:00
-     $Rev: 9
+    $Date: 2024-04-28 20:01:36
+     $Rev: 12
 """
 
 # BUILTIN modules
@@ -140,8 +140,8 @@ class PaymentLogic:
                                          timeout=config.url_timeout)
 
             if resp.status_code != 201:
-                errmsg = f"Failed CustomerService POST request for URL " \
-                         f"{url} - [{resp.status_code}: {resp.json()['detail']}]."
+                errmsg = (f"Failed CustomerService POST request for URL "
+                          f"{url} - [{resp.status_code}: {resp.json()['detail']}].")
                 raise RuntimeError(errmsg)
 
             # Charge the Customer credit card.
@@ -201,8 +201,8 @@ class PaymentLogic:
                                          timeout=config.url_timeout)
 
             if resp.status_code != 201:
-                errmsg = f"Failed CustomerService POST request for URL " \
-                         f"{url} - [{resp.status_code}: {resp.json()['detail']}]."
+                errmsg = (f"Failed CustomerService POST request for URL "
+                          f"{url} - [{resp.status_code}: {resp.json()['detail']}].")
                 raise RuntimeError(errmsg)
 
             # Reimburse the Customer credit card.
@@ -244,8 +244,8 @@ class PaymentLogic:
             payment = await self.repo.read(payload.caller_id)
 
             if not payment:
-                errmsg = f"Caller ID '{payload.caller_id}' does " \
-                         f"not exist in DB api_db.payments."
+                errmsg = (f"Caller ID '{payload.caller_id}' does "
+                          f"not exist in DB api_db.payments.")
                 raise RuntimeError(errmsg)
 
             # Prepare payment response.
