@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-28 15:22:00
-     $Rev: 9
+    $Date: 2024-04-28 15:44:20
+     $Rev: 11
 """
 
 from typing import Optional
@@ -91,6 +91,8 @@ class PaymentApiAdapter:
         :param payload: Payment callback response data.
         :return: Received payload.
         :raise HTTPException [404]: When caller_id does not exist in DB.
+        :raise AssertionError: When broker was not specified during class instantiation.
         """
+        assert self.broker, "Broker has to be specified during class instantiation."
         payment = PaymentLogic(self.repo, self.broker)
         return await payment.process_response(payload)
