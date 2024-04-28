@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-28 20:01:36
-     $Rev: 12
+    $Date: 2024-04-28 22:44:34
+     $Rev: 13
 """
 
 # BUILTIN modules
@@ -31,6 +31,8 @@ from ..repository.url_cache import UrlServiceCache
 from ..web.api.models import BillingCallback, BillingPayload, PaymentPayload
 
 # Constants
+HDR_DATA = {'Content-Type': 'application/json'}
+""" header data used for httpx requests. """
 PAYMENTS_CALLBACK_URL = "http://fictitious.com/v1/payments/callback"
 """ Payment callback URL. """
 
@@ -72,8 +74,9 @@ class PaymentLogic:
         with contextlib.suppress(ConnectError):
             async with AsyncClient() as client:
                 url = "http://fakeCreditCardCompany.com/billings"
-                resp = await client.post(url=url, json=payload.model_dump(),
-                                         timeout=config.url_timeout)
+                resp = await client.post(timeout=config.url_timeout,
+                                         data=payload.model_dump_json(),
+                                         url=url, headers=config.hdr_data)
 
             if resp.status_code != 202:
                 errmsg = (f"Failed sending POST request to Credit Card Company "
@@ -100,8 +103,9 @@ class PaymentLogic:
         with contextlib.suppress(ConnectError):
             async with AsyncClient() as client:
                 url = "http://fakeCreditCardCompany.com/billings/reimburse"
-                resp = await client.post(url=url, json=payload.model_dump(),
-                                         timeout=config.url_timeout)
+                resp = await client.post(timeout=config.url_timeout,
+                                         data=payload.model_dump_json(),
+                                         url=url, headers=config.hdr_data)
 
             if resp.status_code != 202:
                 errmsg = (f"Failed sending POST request to Credit Card Company "
@@ -137,6 +141,7 @@ class PaymentLogic:
             async with AsyncClient(verify=SSL_CONTEXT) as client:
                 url = f"{root}/v1/customers/{meta.customer_id}/billing"
                 resp = await client.post(url=url, json=items,
+                                         headers=config.hdr_data,
                                          timeout=config.url_timeout)
 
             if resp.status_code != 201:
@@ -198,6 +203,7 @@ class PaymentLogic:
             async with AsyncClient(verify=SSL_CONTEXT) as client:
                 url = f"{root}/v1/customers/{meta.customer_id}/billing"
                 resp = await client.post(url=url, json=items,
+                                         headers=config.hdr_data,
                                          timeout=config.url_timeout)
 
             if resp.status_code != 201:

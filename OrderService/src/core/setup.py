@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-04-28 22:44:34
+     $Rev: 13
 """
 
 # BUILTIN modules
@@ -20,7 +20,7 @@ from ssl import SSLContext
 from typing import Type, Tuple
 
 # Third party modules
-from pydantic import Field
+from pydantic import Field, computed_field
 from pydantic_settings import (PydanticBaseSettingsSource,
                                BaseSettings, SettingsConfigDict)
 
@@ -78,6 +78,13 @@ class Configuration(BaseSettings):
     mongo_url: str = Field(MISSING_SECRET, alias=f'mongo_url_{ENVIRONMENT}')
     redis_url: str = Field(MISSING_SECRET, alias=f'redis_url_{ENVIRONMENT}')
     rabbit_url: str = Field(MISSING_SECRET, alias=f'rabbit_url_root_{ENVIRONMENT}')
+
+    @computed_field
+    @property
+    def hdr_data(self) -> dict:
+        """ Use a defined secret as a value. """
+        return {'Content-Type': 'application/json',
+                'X-API-Key': f'{self.service_api_key}'}
 
     @classmethod
     def settings_customise_sources(

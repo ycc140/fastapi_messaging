@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-19 11:40:10
-     $Rev: 7
+    $Date: 2024-04-28 22:44:34
+     $Rev: 13
 """
 
 # BUILTIN modules
@@ -27,10 +27,6 @@ from ..repository.interface import IRepository
 from ..repository.url_cache import UrlServiceCache
 from .models import PaymentPayload, MetadataSchema
 from ..repository.models import Status, OrderItems, OrderModel, StateUpdateSchema
-
-# Constants
-HDR_DATA = {'Content-Type': 'application/json',
-            'X-API-Key': f'{config.service_api_key}'}
 
 
 # ------------------------------------------------------------------------
@@ -137,21 +133,20 @@ class OrderApiLogic:
         meta = MetadataSchema(order_id=self.id,
                               customer_id=self.customer_id,
                               receiver=f'{config.service_name}')
-        payment = PaymentPayload(metadata=meta, **self.dict())
+        payload = PaymentPayload(metadata=meta, **self.dict())
 
         try:
             root = await cache.get('PaymentService')
 
-            async with AsyncClient(verify=SSL_CONTEXT,
-                                   headers=HDR_DATA) as client:
+            async with AsyncClient(verify=SSL_CONTEXT) as client:
                 url = f"{root}/v1/payments"
-                response = await client.post(url=url,
-                                             json=payment.model_dump(),
-                                             timeout=config.url_timeout)
+                resp = await client.post(timeout=config.url_timeout,
+                                         data=payload.model_dump_json(),
+                                         url=url, headers=config.hdr_data)
 
-            if response.status_code != 202:
+            if resp.status_code != 202:
                 errmsg = (f"Failed PaymentService POST request for URL {url} with Order ID "
-                          f"{self.id} - [{response.status_code}: {response.json()['detail']}].")
+                          f"{self.id} - [{resp.status_code}: {resp.json()['detail']}].")
                 raise HTTPException(status_code=400, detail=errmsg)
 
         except ConnectTimeout:
@@ -173,21 +168,20 @@ class OrderApiLogic:
         meta = MetadataSchema(order_id=self.id,
                               customer_id=self.customer_id,
                               receiver=f'{config.service_name}')
-        payment = PaymentPayload(metadata=meta, **self.dict())
+        payload = PaymentPayload(metadata=meta, **self.dict())
 
         try:
             root = await cache.get('PaymentService')
 
-            async with AsyncClient(verify=SSL_CONTEXT,
-                                   headers=HDR_DATA) as client:
+            async with AsyncClient(verify=SSL_CONTEXT) as client:
                 url = f"{root}/v1/payments/reimburse"
-                response = await client.post(url=url,
-                                             json=payment.model_dump(),
-                                             timeout=config.url_timeout)
+                resp = await client.post(timeout=config.url_timeout,
+                                         data=payload.model_dump_json(),
+                                         url=url, headers=config.hdr_data)
 
-            if response.status_code != 202:
+            if resp.status_code != 202:
                 errmsg = (f"Failed PaymentService POST request for URL {url} with Order ID "
-                          f"{self.id} - [{response.status_code}: {response.json()['detail']}].")
+                          f"{self.id} - [{resp.status_code}: {resp.json()['detail']}].")
                 raise HTTPException(status_code=400, detail=errmsg)
 
         except ConnectTimeout:

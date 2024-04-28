@@ -7,12 +7,13 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-28 20:01:36
-     $Rev: 12
+    $Date: 2024-04-28 22:44:34
+     $Rev: 13
 """
 
 # BUILTIN modules
 from uuid import UUID
+from typing import Optional
 
 # Third party modules
 from loguru import logger
@@ -48,10 +49,12 @@ class OrderPaymentResponseLogic:
 
     # ---------------------------------------------------------
     #
-    async def _update_order_in_db(self, order: OrderModel):
+    async def _update_order_in_db(self, order: OrderModel,
+                                  service: Optional[str] = None):
         """ Update Order in DB.
 
         :param order: Current Order.
+        :param service: Updated service.
         """
         successful = await self.repo.update(order)
 
@@ -59,8 +62,22 @@ class OrderPaymentResponseLogic:
             errmsg = f"Failed updating order '{order.id}' in api_db.orders"
             raise RuntimeError(errmsg)
 
-        log = getattr(logger, ('error' if order.status == 'paymentFailed' else 'info'))
-        log(f"Stored status '{order.status.value}' in DB for order '{order.id}'.")
+        log = getattr(logger, (
+            'error' if order.status == 'paymentFailed' else 'info'
+        ))
+
+        match service:
+            case 'KitchenService':
+                txt = (f"Stored kitchen_id '{order.kitchen_id}' "
+                       f"in DB for order '{order.id}'.")
+            case 'DeliveryService':
+                txt = (f"Stored delivery_id '{order.delivery_id}' "
+                       f"in DB for order '{order.id}'.")
+            case _:
+                txt = (f"Stored status '{order.status.value}' "
+                       f"in DB for order '{order.id}'.")
+
+        log(txt)
 
     # ---------------------------------------------------------
     #
@@ -95,8 +112,9 @@ class OrderPaymentResponseLogic:
             # Request DeliveryService work.
             async with AsyncClient() as client:
                 url = f"{root}/v1/deliveries"
-                resp = await client.post(url=url, json=payload.model_dump(),
-                                         timeout=config.url_timeout)
+                resp = await client.post(timeout=config.url_timeout,
+                                         data=payload.model_dump_json(),
+                                         url=url, headers=config.hdr_data)
 
             if resp.status_code != 202:
                 errmsg = (f"Failed {service} POST request for URL {url} - "
@@ -106,7 +124,7 @@ class OrderPaymentResponseLogic:
             data = resp.json()
             order.delivery_id = UUID(data['delivery_id'])
             order.updated.append(StateUpdateSchema(status=order.status))
-            await self._update_order_in_db(order)
+            await self._update_order_in_db(order, service)
 
         except ConnectTimeout:
             errmsg = f'No connection with {service} on URL {url}'
@@ -127,13 +145,15 @@ class OrderPaymentResponseLogic:
         payload = KitchenPayload(metadata=message['metadata'], **order.model_dump())
 
         try:
-            root = await cache.get('KitchenService')
+            service = 'KitchenService'
+            root = await cache.get(service)
 
             # Request KitchenService work.
             async with AsyncClient() as client:
                 url = f"{root}/v1/kitchen"
-                resp = await client.post(url=url, json=payload.model_dump(),
-                                         timeout=config.url_timeout)
+                resp = await client.post(timeout=config.url_timeout,
+                                         data=payload.model_dump_json(),
+                                         url=url, headers=config.hdr_data)
 
             if resp.status_code != 202:
                 errmsg = (f"Failed KitchenService POST request for URL {url} "
@@ -143,7 +163,7 @@ class OrderPaymentResponseLogic:
             data = resp.json()
             order.kitchen_id = UUID(data['kitchen_id'])
             order.updated.append(StateUpdateSchema(status=order.status))
-            await self._update_order_in_db(order)
+            await self._update_order_in_db(order, service)
 
         except ConnectTimeout:
             errmsg = f'No connection with KitchenService on URL {url}'
