@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-28 15:22:00
-     $Rev: 9
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # BUILTIN modules
@@ -24,7 +24,7 @@ from httpx import AsyncClient, ConnectTimeout
 # local modules
 from ..repository.db import Engine
 from ..core.setup import config, SSL_CONTEXT
-from ..broker.unit_of_work import UnitOfWork
+from ..broker.unit_of_work import UnitOfBrokerWork
 from ..repository.url_cache import UrlServiceCache
 from ..web.api.models import HealthResourceModel, HealthResponseModel
 
@@ -102,7 +102,7 @@ class HealthManager:
 
         :return: RabbitMQ connection status.
         """
-        async with UnitOfWork() as broker:
+        async with UnitOfBrokerWork() as broker:
             status = broker.is_connected
 
         return [HealthResourceModel(name='RabbitMQ', status=status)]

@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # BUILTIN modules
@@ -27,9 +27,9 @@ from ..core.setup import config
 from ..repository.db import Engine
 from .api import api, health_route
 from .api.models import ValidStatus
-from .order_event_adapter import OrderEventAdapter
-from ..repository import get_order_response_repository
 from ..tools.rabbit_client import RabbitClient
+from ..repository.unit_of_work import UnitOfRepositoryWork
+from .order_event_adapter import OrderEventAdapter
 from ..tools.custom_logging import create_unified_logger
 from .api.documentation import (servers, license_info,
                                 tags_metadata, description)
@@ -100,9 +100,9 @@ class Service(FastAPI):
             # Verify that message status is valid.
             ValidStatus(status=message.get('status'))
 
-            repo = await get_order_response_repository()
-            worker = OrderEventAdapter(repository=repo)
-            await worker.process_payment_response(message)
+            async with UnitOfRepositoryWork() as repo:
+                worker = OrderEventAdapter(repository=repo)
+                await worker.process_payment_response(message)
 
         except RuntimeError as why:
             self.logger.error(f'{why}')

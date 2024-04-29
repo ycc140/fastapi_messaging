@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-28 15:22:00
-     $Rev: 9
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # Third party modules
@@ -19,7 +19,7 @@ from ..tools.rabbit_client import RabbitClient
 
 # ------------------------------------------------------------------------
 #
-class UnitOfWork:
+class UnitOfBrokerWork:
     """ An async context manager class that publish RabbitMQ messages.
 
     :ivar broker: The order broker object.

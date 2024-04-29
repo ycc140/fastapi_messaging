@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # BUILTIN modules
@@ -19,10 +19,10 @@ from typing import List
 import ujson
 from pymongo import DESCENDING
 from redis.asyncio import from_url
+from motor.motor_asyncio import AsyncIOMotorClientSession
 
 # Local modules
 from ..core.setup import config
-from .db import AsyncIOMotorClientSession
 from .models import OrderModel, OrderUpdateModel, dict_of
 
 # Constants

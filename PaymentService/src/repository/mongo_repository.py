@@ -7,15 +7,17 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # BUILTIN modules
 from uuid import UUID
 
+# Third party modules
+from motor.motor_asyncio import AsyncIOMotorClientSession
+
 # Local modules
-from .db import AsyncIOMotorClientSession
 from .models import PaymentModel, PaymentUpdateModel
 
 

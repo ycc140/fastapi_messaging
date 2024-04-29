@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # BUILTIN modules
@@ -20,10 +20,9 @@ from fastapi.responses import Response
 from fastapi import APIRouter, status, Depends
 
 # Local modules
-from ...repository import get_order_api_repository
 from .order_api_adapter import OrderApiAdapter
-from ...repository.interface import IRepository
 from .documentation import order_id_documentation
+from ...repository.unit_of_work import UnitOfRepositoryWork
 from ...core.security import validate_authentication
 from .models import (OrderPayload, OrderResponse,
                      NotFoundError, FailedUpdateError, ConnectError)
@@ -44,18 +43,15 @@ ROUTER = APIRouter(prefix="/v1/orders", tags=["Orders"],
         500: {'model': ConnectError},
         400: {"model": FailedUpdateError}}
 )
-async def create_order(
-        payload: OrderPayload,
-        repo: IRepository = Depends(get_order_api_repository)
-) -> OrderResponse:
+async def create_order(payload: OrderPayload) -> OrderResponse:
     """ **Create a new Order in the DB and trigger a payment.**
 
     :param payload: Current order payload.
-    :param repo: OrderRepository object with an active DB session.
     :return: Order create response.
     """
-    service = OrderApiAdapter(repo)
-    return await service.create_order(payload)
+    async with UnitOfRepositoryWork() as repo:
+        service = OrderApiAdapter(repo)
+        return await service.create_order(payload)
 
 
 # ---------------------------------------------------------
@@ -69,19 +65,16 @@ async def create_order(
         404: {"model": NotFoundError},
         400: {"model": FailedUpdateError}}
 )
-async def cancel_order(
-        order_id: UUID = order_id_documentation,
-        repo: IRepository = Depends(get_order_api_repository)
-) -> OrderResponse:
+async def cancel_order(order_id: UUID = order_id_documentation) -> OrderResponse:
     """
     **Cancel Order for matching order_id in the DB and trigger a reimbursement.**
 
     :param order_id: Current order_id.
-    :param repo: OrderRepository object with an active DB session.
     :return: Order cancel response.
     """
-    service = OrderApiAdapter(repo)
-    return await service.cancel_order(order_id)
+    async with UnitOfRepositoryWork() as repo:
+        service = OrderApiAdapter(repo)
+        return await service.cancel_order(order_id)
 
 
 # ---------------------------------------------------------
@@ -90,16 +83,14 @@ async def cancel_order(
     "",
     response_model=List[OrderResponse]
 )
-async def get_all_orders(
-        repo: IRepository = Depends(get_order_api_repository)
-) -> List[OrderResponse]:
+async def get_all_orders() -> List[OrderResponse]:
     """ **Read all Orders from the DB sorted on created timestamp.**
 
-    :param repo: OrderRepository object with an active DB session.
     :return: All orders.
     """
-    service = OrderApiAdapter(repo)
-    return await service.list_orders()
+    async with UnitOfRepositoryWork() as repo:
+        service = OrderApiAdapter(repo)
+        return await service.list_orders()
 
 
 # ---------------------------------------------------------
@@ -109,18 +100,15 @@ async def get_all_orders(
     response_model=OrderResponse,
     responses={404: {"model": NotFoundError}}
 )
-async def get_order(
-        order_id: UUID = order_id_documentation,
-        repo: IRepository = Depends(get_order_api_repository)
-) -> OrderResponse:
+async def get_order(order_id: UUID = order_id_documentation) -> OrderResponse:
     """ **Read Order for matching order_id from the DB.**
 
     :param order_id: Current order_id.
-    :param repo: OrderRepository object with an active DB session.
     :return: Order query response.
     """
-    service = OrderApiAdapter(repo)
-    return await service.get_order(order_id)
+    async with UnitOfRepositoryWork() as repo:
+        service = OrderApiAdapter(repo)
+        return await service.get_order(order_id)
 
 
 # ---------------------------------------------------------
@@ -131,16 +119,13 @@ async def get_order(
     responses={404: {"model": NotFoundError}},
     response_description='Order was successfully deleted in the DB.'
 )
-async def delete_order(
-        order_id: UUID = order_id_documentation,
-        repo: IRepository = Depends(get_order_api_repository)
-) -> Response:
+async def delete_order(order_id: UUID = order_id_documentation) -> Response:
     """ **Delete Order for matching order_id from the DB.**
 
     :param order_id: Current order_id.
-    :param repo: OrderRepository object with an active DB session.
     :return: Order delete response (None).
     """
-    service = OrderApiAdapter(repo)
-    await service.delete_order(order_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    async with UnitOfRepositoryWork() as repo:
+        service = OrderApiAdapter(repo)
+        await service.delete_order(order_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)

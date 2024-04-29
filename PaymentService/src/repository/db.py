@@ -7,12 +7,12 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # Third party modules
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorClientSession
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Local program modules
 from ..core.setup import config
@@ -54,17 +54,3 @@ class Engine:
     async def is_db_connected(cls) -> bool:
         """ Return DB connection status. """
         return bool(cls.client.server_info())
-
-    # ---------------------------------------------------------
-    #
-    @classmethod
-    async def get_async_session(cls) -> AsyncIOMotorClientSession:
-        """ Return an active database session object from the pool.
-
-        Note that this is a DB session generator.
-
-        Returns:
-            An active DB session.
-        """
-        async with await cls.client.start_session() as session:
-            yield session

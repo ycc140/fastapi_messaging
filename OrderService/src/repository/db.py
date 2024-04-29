@@ -7,13 +7,12 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-04-29 09:43:22
+     $Rev: 14
 """
 
 # Third party modules
-from loguru import logger
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorClientSession
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Local program modules
 from ..core.setup import config
@@ -33,7 +32,7 @@ class Engine:
     #
     @classmethod
     async def create_db_connection(cls):
-        """ Initialize connection to MongoDb and default database.
+        """ Initialize connection to MongoDb.
 
         Setting server connection timeout to 5 (default is 30) seconds.
         """
@@ -55,21 +54,3 @@ class Engine:
     async def is_db_connected(cls) -> bool:
         """ Return MongoDB connection status. """
         return bool(cls.client.server_info())
-
-    # ---------------------------------------------------------
-    #
-    @classmethod
-    async def get_async_session(cls) -> AsyncIOMotorClientSession:
-        """ Return an active database session object from the pool.
-
-        Note that this is a DB session generator.
-
-        Returns:
-            An active DB session.
-        """
-        try:
-            async with await cls.client.start_session() as session:
-                yield session
-
-        except BaseException as why:
-            logger.critical(f'MongoDB server is unreachable: {why.args[1]}.')
