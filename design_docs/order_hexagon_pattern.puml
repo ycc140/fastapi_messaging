@@ -1,0 +1,31 @@
+@startuml
+
+' documentation: https://plantuml.com/deployment-diagram
+
+title OrderService Hexagon architectural pattern diagram
+left to right direction
+
+artifact "      API\nendpoints" as AEP
+card "primary adapters" #LightGreen {
+    action "Order API\n  adapter" as API
+    action "   RabbitMQ\n adapter (sub)" as SUB
+}
+
+agent CRUD #LightBlue[
+secondary adapter
+----
+   CRUD adapter
+]
+
+hexagon #LightYellow"Business\n   Logic" as BUSINESS
+database "MongoDB" as MONGO
+
+AEP --> API
+API -(0- BUSINESS
+SUB -(0- BUSINESS
+
+BUSINESS -0)- CRUD
+CRUD <-> MONGO
+CRUD -[dashed]-> API : [injection]
+
+@enduml

@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-29 09:43:22
-     $Rev: 14
+    $Date: 2024-05-01 02:28:35
+     $Rev: 15
 """
 
 # BUILTIN modules
@@ -22,8 +22,8 @@ from fastapi import APIRouter, status, Depends
 # Local modules
 from .order_api_adapter import OrderApiAdapter
 from .documentation import order_id_documentation
-from ...repository.unit_of_work import UnitOfRepositoryWork
 from ...core.security import validate_authentication
+from ...repository.unit_of_work import UnitOfRepositoryWork
 from .models import (OrderPayload, OrderResponse,
                      NotFoundError, FailedUpdateError, ConnectError)
 
@@ -128,4 +128,5 @@ async def delete_order(order_id: UUID = order_id_documentation) -> Response:
     async with UnitOfRepositoryWork() as repo:
         service = OrderApiAdapter(repo)
         await service.delete_order(order_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

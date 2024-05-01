@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-05-01 02:28:35
+     $Rev: 15
 """
 
 # BUILTIN modules
@@ -125,15 +125,3 @@ class OrderApiAdapter:
         db_order = await self._order_of(order_id)
         order = OrderApiLogic(repository=self.repo, **db_order.model_dump())
         await order.delete()
-
-    # ---------------------------------------------------------
-    #
-    async def handle_order_payment_response(self, payload: PaymentResponse) -> str:
-        """ Create a new order in DB and make a payment request.
-
-        :param payload: Order Payment Response request.
-        :return: OK
-        """
-        order = OrderPaymentResponseLogic(repository=self.repo)
-        await order.process_response(payload.model_dump())
-        return 'OK'

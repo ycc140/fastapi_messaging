@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-29 09:43:22
-     $Rev: 14
+    $Date: 2024-05-01 02:28:35
+     $Rev: 15
 """
 
 # BUILTIN modules
@@ -24,8 +24,8 @@ from httpx import AsyncClient, ConnectTimeout
 # local modules
 from ..repository.db import Engine
 from ..core.setup import config, SSL_CONTEXT
+from ..tools.url_cache import UrlServiceCache
 from ..broker.unit_of_work import UnitOfBrokerWork
-from ..repository.url_cache import UrlServiceCache
 from ..web.api.models import HealthResourceModel, HealthResponseModel
 
 # Constants

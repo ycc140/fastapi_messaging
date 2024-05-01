@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-29 09:43:22
-     $Rev: 14
+    $Date: 2024-05-01 02:28:35
+     $Rev: 15
 """
 
 # Third party modules
@@ -47,7 +47,8 @@ async def create_payment(payload: PaymentPayload) -> PaymentAcknowledge:
     async with UnitOfRepositoryWork() as repo:
         service = PaymentApiAdapter(repo)
         await service.process_payment_request(payload)
-        return PaymentAcknowledge(order_id=payload.metadata.order_id)
+
+    return PaymentAcknowledge(order_id=payload.metadata.order_id)
 
 
 # ---------------------------------------------------------
@@ -69,7 +70,8 @@ async def reimburse_payment(payload: PaymentPayload) -> PaymentAcknowledge:
     async with UnitOfRepositoryWork() as repo:
         service = PaymentApiAdapter(repo)
         await service.process_reimbursement_request(payload)
-        return PaymentAcknowledge(order_id=payload.metadata.order_id)
+
+    return PaymentAcknowledge(order_id=payload.metadata.order_id)
 
 
 # ---------------------------------------------------------

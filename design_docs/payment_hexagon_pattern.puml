@@ -1,0 +1,35 @@
+@startuml
+
+' documentation: https://plantuml.com/deployment-diagram
+
+title PaymentService Hexagon architectural pattern diagram
+left to right direction
+
+artifact "      API\nendpoints" as AEP
+action API #LightGreen[
+Primary adapter
+----
+Order API adapter
+]
+
+card "Secondary\nadapters" #LightBlue {
+    agent "  RabbitMQ\n adapter (pub)" as PUB
+    agent " CRUD\n adapter" as CRUD
+}
+
+database "MongoDB" as MONGO
+collections "       other\nMicroservices\n adapter (sub)" as SERVICES
+
+hexagon #LightYellow"Business\n   Logic" as BUSINESS
+
+API -(0- BUSINESS
+
+PUB --> SERVICES
+AEP -> API
+BUSINESS -0)- PUB
+BUSINESS -0)- CRUD
+CRUD <-> MONGO
+CRUD -[dashed]-> API : [injection]
+PUB -[dashed]-> API : [injection]
+
+@enduml

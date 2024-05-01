@@ -7,15 +7,15 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-27 21:26:58
-     $Rev: 8
+    $Date: 2024-05-01 02:28:35
+     $Rev: 15
 """
 
 # Third party modules
 from redis.asyncio import from_url
 
 # Local modules
-from .db import Engine
+from ..repository.db import Engine
 
 # Constants
 EXPIRE = 60 * 60 * 24
