@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-28 15:22:00
-     $Rev: 9
+    $Date: 2024-12-20 13:46:05
+     $Rev: 16
 """
 
 # BUILTIN modules
@@ -68,6 +68,28 @@ class Service(FastAPI):
 
 # ---------------------------------------------------------
 #
+async def startup(service: Service):
+    """ Initialize MongoDB connection.
+
+    :param service: FastAPI service instance.
+    """
+    service.logger.info('Establishing MongoDB connection...')
+    await Engine.create_db_connection()
+
+
+# ---------------------------------------------------------
+#
+async def shutdown(service: Service):
+    """ Close MongoDB connection.
+
+    :param service: FastAPI service instance.
+    """
+    service.logger.info('Disconnecting from MongoDB...')
+    await Engine.close_db_connection()
+
+
+# ---------------------------------------------------------
+#
 @asynccontextmanager
 async def lifespan(service: Service):
     """ Define startup and shutdown application logic.
@@ -103,25 +125,3 @@ app = Service(
     openapi_tags=tags_metadata,
 )
 """ The FastAPI application instance. """
-
-
-# ---------------------------------------------------------
-#
-async def startup(service: Service):
-    """ Initialize MongoDB connection.
-
-    :param service: FastAPI service instance.
-    """
-    service.logger.info('Establishing MongoDB connection...')
-    await Engine.create_db_connection()
-
-
-# ---------------------------------------------------------
-#
-async def shutdown(service: Service):
-    """ Close MongoDB connection.
-
-    :param service: FastAPI service instance.
-    """
-    service.logger.info('Disconnecting from MongoDB...')
-    await Engine.close_db_connection()

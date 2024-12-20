@@ -8,8 +8,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-09 05:37:36
-     $Rev: 3
+    $Date: 2024-12-20 13:46:05
+     $Rev: 16
 """
 
 # BUILTIN modules
@@ -45,7 +45,7 @@ PAYLOAD = {
 # ---------------------------------------------------------
 #
 def _build_message(pid: int, order_id: str) -> dict:
-    """ Build response message
+    """ Build the response message
 
     :param pid: Payload ID
     :param order_id: Order ID

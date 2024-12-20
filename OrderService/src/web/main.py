@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-04-29 09:43:22
-     $Rev: 14
+    $Date: 2024-12-20 13:46:05
+     $Rev: 16
 """
 
 # BUILTIN modules
@@ -116,6 +116,37 @@ class Service(FastAPI):
 
 # ---------------------------------------------------------
 #
+async def startup(service: Service):
+    """ Initialize RabbitMQ and MongoDB connection.
+
+    :param service: FastAPI service instance.
+    """
+
+    service.logger.info('Establishing MongoDB connection...')
+    await Engine.create_db_connection()
+
+    service.logger.info('Establishing RabbitMQ message queue consumer...')
+    await service.rabbit_client.start()
+    await asyncio.create_task(service.rabbit_client.start_subscription())
+
+
+# ---------------------------------------------------------
+#
+async def shutdown(service: Service):
+    """ Close RabbitMQ and MongoDB connection.
+
+    :param service: FastAPI service instance.
+    """
+    if service.rabbit_client.is_connected:
+        service.logger.info('Disconnecting from RabbitMQ...')
+        await service.rabbit_client.stop()
+
+    service.logger.info('Disconnecting from MongoDB...')
+    await Engine.close_db_connection()
+
+
+# ---------------------------------------------------------
+#
 @asynccontextmanager
 async def lifespan(service: Service):
     """ Define startup and shutdown application logic.
@@ -154,34 +185,3 @@ app = Service(
     # swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"}
 )
 """ The FastAPI application instance. """
-
-
-# ---------------------------------------------------------
-#
-async def startup(service: Service):
-    """ Initialize RabbitMQ and MongoDB connection.
-
-    :param service: FastAPI service instance.
-    """
-
-    service.logger.info('Establishing MongoDB connection...')
-    await Engine.create_db_connection()
-
-    service.logger.info('Establishing RabbitMQ message queue consumer...')
-    await service.rabbit_client.start()
-    await asyncio.create_task(service.rabbit_client.start_subscription())
-
-
-# ---------------------------------------------------------
-#
-async def shutdown(service: Service):
-    """ Close RabbitMQ and MongoDB connection.
-
-    :param service: FastAPI service instance.
-    """
-    if service.rabbit_client.is_connected:
-        service.logger.info('Disconnecting from RabbitMQ...')
-        await service.rabbit_client.stop()
-
-    service.logger.info('Disconnecting from MongoDB...')
-    await Engine.close_db_connection()

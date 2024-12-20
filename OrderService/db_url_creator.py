@@ -7,8 +7,8 @@ VERSION INFO::
 
     $Repo: fastapi_messaging
   $Author: Anders Wiklund
-    $Date: 2024-03-22 20:51:42
-     $Rev: 69
+    $Date: 2024-12-20 13:46:05
+     $Rev: 16
 """
 
 # BUILTIN modules
@@ -34,13 +34,13 @@ async def creator():
     """
     await Engine.create_db_connection()
 
-    await Engine.db.service_urls.drop()
+    await Engine.client.service_urls.drop()
     print("Dropped api_db.service_urls collection.")
 
     response = [{'_id': key, 'url': item} for key, item in URLS.items()]
 
-    await Engine.db.service_urls.insert_many(response)
-    result = await Engine.db.service_urls.count_documents({})
+    await Engine.client.service_urls.insert_many(response)
+    result = await Engine.client.service_urls.count_documents({})
     print(result, "MicroService URLs are inserted in api_db.service_urls.")
 
     await Engine.close_db_connection()
